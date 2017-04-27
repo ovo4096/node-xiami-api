@@ -5,7 +5,7 @@ Xiami music API for Node.js.
 
 - [ ] Get song
 - [ ] Get album
-- [ ] Get playlist
+- [ ] Get featured collection
 - [ ] Get artist
 - [ ] Music library search
 - [ ] Login and get the user
