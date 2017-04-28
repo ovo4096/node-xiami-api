@@ -1,6 +1,6 @@
-const FavoriteCollection = require('./favorite-collection')
+const FavoriteCollection = require('./_favorite-collection')
 
-class XiamiUserClient {
+class UserClient {
   constructor (username, password) {
     this._login(username, password)
     this._favoriteSongs = new FavoriteCollection()
@@ -8,6 +8,7 @@ class XiamiUserClient {
     this._favoriteArtists = new FavoriteCollection()
     this._favoriteFeaturedPlaylists = new FavoriteCollection()
     this._profile = {}
+    this._todayRecommendedPlaylist = {}
   }
 
   get favoriteSongs () {
@@ -30,6 +31,10 @@ class XiamiUserClient {
     return this._profile
   }
 
+  get todayRecommendedPlaylist () {
+    return this._todayRecommendedPlaylist
+  }
+
   checkin () {
   }
 
@@ -37,4 +42,4 @@ class XiamiUserClient {
   }
 }
 
-module.exports = XiamiUserClient
+module.exports = UserClient
