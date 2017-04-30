@@ -24,41 +24,42 @@ class Song {
     return this._artists
   }
 
-  static get (id, callback) {
-    http.get(`http://www.xiami.com/song/${id}`, (res) => {
-      const { statusCode } = res
+  _get () {
+    return new Promise((resolve, reject) => {
+      http.get(`http://www.xiami.com/song/${this.id}`, (res) => {
+        const { statusCode } = res
 
-      let error
-      if (statusCode !== 200) {
-        error = new Error(`Request Failed.\n` +
+        let error
+        if (statusCode !== 200) {
+          error = new Error(`Request Failed.\n` +
                       `Status Code: ${statusCode}`)
-      }
+        }
 
-      if (error) {
-        callback(error)
-        res.resume()
-        return
-      }
+        if (error) {
+          reject(error)
+          res.resume()
+          return
+        }
 
-      res.setEncoding('utf8')
-      let rawData = ''
-      res.on('data', (chunk) => { rawData += chunk })
-      res.on('end', () => {
-        const $ = cheerio.load(rawData)
-        const song = new Song(parseInt($('#qrcode > .acts').text().trim()))
+        res.setEncoding('utf8')
+        let rawData = ''
+        res.on('data', (chunk) => { rawData += chunk })
+        res.on('end', () => {
+          const $ = cheerio.load(rawData)
+          this._id = parseInt($('#qrcode > .acts').text().trim())
+          this._name = $('#title > h1').clone().children().remove().end().text().trim()
+          this._album = new Album(parseInt($('#albumCover').attr('href').match(/\d+/)[0]))
+          this._artists = []
 
-        song._name = $('#title > h1').clone().children().remove().end().text().trim()
-        song._album = new Album(parseInt($('#albumCover').attr('href').match(/\d+/)[0]))
-        song._artists = []
-
-        $('td:contains("演唱者：") + td a').each(function () {
-          song._artists.push(new Artist($(this).attr('href').match(/\w+$/)[0]))
+          const self = this
+          $('td:contains("演唱者：") + td a').each(function () {
+            self._artists.push(new Artist($(this).attr('href').match(/\w+$/)[0]))
+          })
+          resolve()
         })
-
-        callback(null, song)
+      }).on('error', (e) => {
+        reject(e)
       })
-    }).on('error', (e) => {
-      callback(e)
     })
   }
 }
