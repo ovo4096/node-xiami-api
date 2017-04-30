@@ -1,6 +1,6 @@
 const http = require('http')
 const cheerio = require('cheerio')
-const URL = require('url').URL
+const url = require('url')
 const Song = require('./song')
 const decodeLocation = require('./decode-location')
 
@@ -9,7 +9,6 @@ module.exports = class {
     return new Promise((resolve, reject) => {
       http.get(`http://www.xiami.com/song/${id}`, (res) => {
         const { statusCode } = res
-
         let error
         if (statusCode !== 200) {
           error = new Error(`Request Failed.\n` +
@@ -26,6 +25,13 @@ module.exports = class {
         res.on('data', (chunk) => { rawData += chunk })
         res.on('end', () => {
           const $ = cheerio.load(rawData)
+          const artistIds = []
+          $('td:contains("演唱者：") + td a').each(function () {
+            artistIds.push($(this).attr('href').match(/\w+$/)[0])
+          })
+          const id = parseInt($('#qrcode > .acts').text().trim())
+          const name = $('#title > h1').clone().children().remove().end().text().trim()
+          const albumId = parseInt($('#albumCover').attr('href').match(/\d+/))
 
           http.get({
             hostname: 'www.xiami.com',
@@ -35,7 +41,6 @@ module.exports = class {
             }
           }, (res) => {
             const { statusCode } = res
-
             let error
             if (statusCode !== 200) {
               error = new Error(`Request Failed.\n` +
@@ -53,19 +58,15 @@ module.exports = class {
             res.on('end', () => {
               try {
                 const parsedData = JSON.parse(rawData)
-
                 let audioURL = null
                 if (parsedData.status === 1 && parsedData.location !== '') {
-                  audioURL = new URL(decodeLocation(parsedData.location))
+                  audioURL = url.parse(decodeLocation(parsedData.location))
                 }
-                const artistIds = []
-                $('td:contains("演唱者：") + td a').each(function () {
-                  artistIds.push($(this).attr('href').match(/\w+$/)[0])
-                })
+
                 const song = new Song({
-                  id: parseInt($('#qrcode > .acts').text().trim()),
-                  name: $('#title > h1').clone().children().remove().end().text().trim(),
-                  albumId: parseInt($('#albumCover').attr('href').match(/\d+/)),
+                  id,
+                  name,
+                  albumId,
                   artistIds,
                   audioURL
                 })
