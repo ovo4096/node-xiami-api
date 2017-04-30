@@ -1,7 +1,8 @@
 const xiami = require('../src')
 
-xiami.getSong(1769386355).then((song) => {
+xiami.getSong(1774179097).then((song) => {
   console.log(song.name)
+  console.log(song.audioURL)
 }).catch((err) => {
   console.log(err)
 })
