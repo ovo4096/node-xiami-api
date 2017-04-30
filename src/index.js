@@ -25,13 +25,17 @@ module.exports = class {
         res.on('data', (chunk) => { rawData += chunk })
         res.on('end', () => {
           const $ = cheerio.load(rawData)
-          const song = new Song()
-          song._id = parseInt($('#qrcode > .acts').text().trim())
-          song._name = $('#title > h1').clone().children().remove().end().text().trim()
-          song._albumId = parseInt($('#albumCover').attr('href').match(/\d+/)[0])
-          song._artistIds = []
+
+          const artistIds = []
           $('td:contains("演唱者：") + td a').each(function () {
-            song._artistIds.push($(this).attr('href').match(/\w+$/)[0])
+            artistIds.push($(this).attr('href').match(/\w+$/)[0])
+          })
+
+          const song = new Song({
+            id: parseInt($('#qrcode > .acts').text().trim()),
+            name: $('#title > h1').clone().children().remove().end().text().trim(),
+            albumId: parseInt($('#albumCover').attr('href').match(/\d+/)),
+            artistIds
           })
           resolve(song)
         })
