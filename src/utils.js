@@ -5,6 +5,7 @@ const htmlToText = require('html-to-text')
 
 const Song = require('./song')
 const Album = require('./album')
+// const Artist = require('./artist')
 
 module.exports = class {
   /**
@@ -210,6 +211,72 @@ module.exports = class {
           }))
         })
       }).on('error', (e) => { reject(e) })
+    })
+  }
+
+  static getArtistInfo (id) {
+    return new Promise((resolve, reject) => {
+      http.get(`http://www.xiami.com/artist/album-${id}`, (res) => {
+        const { statusCode } = res
+        let error
+        if (statusCode !== 200) {
+          error = new Error(`Request Failed.\n` +
+                      `Status Code: ${statusCode}`)
+        }
+        if (error) {
+          reject(error)
+          res.resume()
+          return
+        }
+
+        res.setEncoding('utf8')
+        let rawData = ''
+        res.on('data', (chunk) => { rawData += chunk })
+        res.on('end', () => {
+          const $ = cheerio.load(rawData)
+
+          const name = $('#artist_profile > .content.clearfix > p > a').clone().children().remove().end().text().trim()
+          const alias = $('#artist_profile > .content.clearfix > p > a > span').clone().children().remove().end().text().trim()
+          const photoURL = url.parse($('#artist_profile > .content.clearfix > a > img').attr('src').replace('_3', ''))
+          resolve({ name, alias, photoURL })
+        })
+      }).on('error', (e) => { reject(e) })
+    })
+  }
+
+  static getArtistDescription (id) {
+    return new Promise((resolve, reject) => {
+      http.get(`http://www.xiami.com/artist/profile-${id}`, (res) => {
+        const { statusCode } = res
+        let error
+        if (statusCode !== 200) {
+          error = new Error(`Request Failed.\n` +
+                      `Status Code: ${statusCode}`)
+        }
+        if (error) {
+          reject(error)
+          res.resume()
+          return
+        }
+
+        res.setEncoding('utf8')
+        let rawData = ''
+        res.on('data', (chunk) => { rawData += chunk })
+        res.on('end', () => {
+          const $ = cheerio.load(rawData)
+          const description = htmlToText.fromString($('#main > .profile').html())
+          resolve(description)
+        })
+      }).on('error', (e) => { reject(e) })
+    })
+  }
+
+  static getArtistTop100Song (id, page) {
+
+  }
+
+  static getArtist (id) {
+    return new Promise((resolve, reject) => {
     })
   }
 }
