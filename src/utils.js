@@ -1,7 +1,10 @@
 const http = require('http')
 const cheerio = require('cheerio')
 const url = require('url')
+const htmlToText = require('html-to-text')
+
 const Song = require('./song')
+const Album = require('./album')
 
 module.exports = class {
   /**
@@ -61,8 +64,8 @@ module.exports = class {
         res.on('end', () => {
           const $ = cheerio.load(rawData)
           const artistIds = []
-          $('td:contains("演唱者：") + td a').each(function () {
-            artistIds.push($(this).attr('href').match(/\w+$/)[0])
+          $('td:contains("演唱者：") + td a').each((_, element) => {
+            artistIds.push($(element).attr('href').match(/\w+$/)[0])
           })
           const id = parseInt($('#qrcode > .acts').text().trim())
           const name = $('#title > h1').clone().children().remove().end().text().trim()
@@ -154,17 +157,59 @@ module.exports = class {
     return new Promise((resolve, reject) => {
       this.getSongInfo(id).then(({ id, name, albumId, artistIds }) => {
         Promise.all([ this.getSongAudioURL(id), this.getSongLyricsURL(id) ]).then((values) => {
-          const song = new Song({
+          resolve(new Song({
             id,
             name,
             albumId,
             artistIds,
             audioURL: values[0],
             lyricsURL: values[1]
-          })
-          resolve(song)
+          }))
         }).catch((e) => { reject(e) })
       }).catch((e) => { reject(e) })
+    })
+  }
+
+  static getAlbum (id) {
+    return new Promise((resolve, reject) => {
+      http.get(`http://www.xiami.com/album/${id}`, (res) => {
+        const { statusCode } = res
+        let error
+        if (statusCode !== 200) {
+          error = new Error(`Request Failed.\n` +
+                      `Status Code: ${statusCode}`)
+        }
+        if (error) {
+          reject(error)
+          res.resume()
+          return
+        }
+
+        res.setEncoding('utf8')
+        let rawData = ''
+        res.on('data', (chunk) => { rawData += chunk })
+        res.on('end', () => {
+          const $ = cheerio.load(rawData)
+
+          const id = parseInt($('#qrcode > .acts').text().trim())
+          const name = $('#title > h1').clone().children().remove().end().text().trim()
+          const songIds = []
+          $('#track .chkbox > input').each((_, element) => {
+            songIds.push(parseInt($(element).attr('value')))
+          })
+          const artistId = $('td:contains("艺人：") + td a').attr('href').match(/\w+$/)[0]
+          const coverURL = url.parse($('#cover_lightbox').attr('href'))
+          const description = htmlToText.fromString($('#album_intro [property="v:summary"]').text())
+          resolve(new Album({
+            id,
+            name,
+            songIds,
+            artistId,
+            coverURL,
+            description
+          }))
+        })
+      }).on('error', (e) => { reject(e) })
     })
   }
 }

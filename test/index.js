@@ -1,13 +1,25 @@
 const xiami = require('../src')
 
-xiami.utils.getSong('xLJhMEa6116').then((song) => {
-  console.log(`${song.name} (id: ${song.id})`)
-}).catch((e) => {
-  console.log(e)
-})
+xiami.utils.getAlbum('w6U948110').then((album) => {
+  console.log(album.name + '\n')
+  console.log(album.description + '\n')
+  console.log(album.coverURL.href + '\n')
 
-xiami.utils.getSongInfo('xLJhMEa6116').then((info) => {
-  console.log(info)
+  const tasks = []
+  for (const id of album.songIds) {
+    tasks.push(xiami.utils.getSong(id))
+  }
+
+  Promise.all(tasks).then((tracklist) => {
+    for (const song of tracklist) {
+      console.log(song.name)
+      console.log(song.audioURL.href)
+      console.log(song.lyricsURL.href)
+      console.log()
+    }
+  }).catch((e) => {
+    console.log(e)
+  })
 }).catch((e) => {
   console.log(e)
 })
