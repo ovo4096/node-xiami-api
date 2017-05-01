@@ -1,10 +1,3 @@
-const _id = new WeakMap()
-const _name = new WeakMap()
-const _artistId = new WeakMap()
-const _songIds = new WeakMap()
-const _coverURL = new WeakMap()
-const _description = new WeakMap()
-
 class Album {
   constructor ({
     id = null,
@@ -14,36 +7,36 @@ class Album {
     coverURL = null,
     description = null
   } = {}) {
-    _id.set(this, id)
-    _name.set(this, name)
-    _artistId.set(this, artistId)
-    _songIds.set(this, songIds)
-    _coverURL.set(this, coverURL)
-    _description.set(this, description)
+    this._id = id
+    this._name = name
+    this._artistId = artistId
+    this._songIds = songIds
+    this._coverURL = coverURL
+    this._description = description
   }
 
   get id () {
-    return _id.get(this)
+    return this._id
   }
 
   get name () {
-    return _name.get(this)
+    return this._name
   }
 
   get artistId () {
-    return _artistId.get(this)
+    return this._artistId
   }
 
   get songIds () {
-    return _songIds.get(this)
+    return this._songIds
   }
 
   get coverURL () {
-    return _coverURL.get(this)
+    return this._coverURL
   }
 
   get description () {
-    return _description.get(this)
+    return this._description
   }
 }
 
