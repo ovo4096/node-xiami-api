@@ -22,7 +22,7 @@ class Song {
   }
 
   get title () {
-    return this._name
+    return this._title
   }
 
   get subtitle () {
