@@ -44,6 +44,12 @@ class Artist {
   get top100Songs () {
     return this._top100Songs
   }
+
+  static getInstance (id) {
+    return util.getArtist(id)
+  }
 }
 
 module.exports = Artist
+
+const util = require('./util')

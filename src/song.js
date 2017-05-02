@@ -23,12 +23,16 @@ class Song {
     return this._name
   }
 
-  get albumId () {
-    return this._albumId
+  get album () {
+    return Album.getInstance(this._albumId)
   }
 
-  get artistIds () {
-    return this._artistIds
+  get artists () {
+    const artists = []
+    for (const id of this._artistIds) {
+      artists.push(Artist.getInstance(id))
+    }
+    return Promise.all(artists)
   }
 
   get audioURL () {
@@ -38,6 +42,14 @@ class Song {
   get lyricsURL () {
     return this._lyricsURL
   }
+
+  static getInstance (id) {
+    return util.getSong(id)
+  }
 }
 
 module.exports = Song
+
+const util = require('./util')
+const Album = require('./album')
+const Artist = require('./artist')

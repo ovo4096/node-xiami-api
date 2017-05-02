@@ -3,14 +3,14 @@ class Album {
     id = null,
     name = null,
     artistId = null,
-    songIds = null,
+    tracklistIds = null,
     coverURL = null,
     description = null
   } = {}) {
     this._id = id
     this._name = name
     this._artistId = artistId
-    this._songIds = songIds
+    this._tracklistIds = tracklistIds
     this._coverURL = coverURL
     this._description = description
   }
@@ -23,12 +23,16 @@ class Album {
     return this._name
   }
 
-  get artistId () {
-    return this._artistId
+  get artist () {
+    return Artist.getInstance(this._artistId)
   }
 
-  get songIds () {
-    return this._songIds
+  get tracklist () {
+    const tracklist = []
+    for (const id of this._tracklistIds) {
+      tracklist.push(Song.getInstance(id))
+    }
+    return Promise.all(tracklist)
   }
 
   get coverURL () {
@@ -38,6 +42,14 @@ class Album {
   get description () {
     return this._description
   }
+
+  static getInstance (id) {
+    return util.getAlbum(id)
+  }
 }
 
 module.exports = Album
+
+const util = require('./util')
+const Song = require('./song')
+const Artist = require('./artist')

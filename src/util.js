@@ -3,10 +3,6 @@ const cheerio = require('cheerio')
 const url = require('url')
 const htmlToText = require('html-to-text')
 
-const Song = require('./song')
-const Album = require('./album')
-// const Artist = require('./artist')
-
 module.exports = class {
   /**
    * The decoding method is implemented by https://github.com/Flowerowl/xiami/blob/master/xiami.php
@@ -194,9 +190,9 @@ module.exports = class {
 
           const id = parseInt($('#qrcode > .acts').text().trim())
           const name = $('#title > h1').clone().children().remove().end().text().trim()
-          const songIds = []
+          const tracklistIds = []
           $('#track .chkbox > input').each((_, element) => {
-            songIds.push(parseInt($(element).attr('value')))
+            tracklistIds.push(parseInt($(element).attr('value')))
           })
           const artistId = $('td:contains("艺人：") + td a').attr('href').match(/\w+$/)[0]
           const coverURL = url.parse($('#cover_lightbox').attr('href'))
@@ -204,7 +200,7 @@ module.exports = class {
           resolve(new Album({
             id,
             name,
-            songIds,
+            tracklistIds,
             artistId,
             coverURL,
             description
@@ -238,7 +234,8 @@ module.exports = class {
           const name = $('#artist_profile > .content.clearfix > p > a').clone().children().remove().end().text().trim()
           const alias = $('#artist_profile > .content.clearfix > p > a > span').clone().children().remove().end().text().trim()
           const photoURL = url.parse($('#artist_profile > .content.clearfix > a > img').attr('src').replace('_3', ''))
-          resolve({ name, alias, photoURL })
+          const id = parseInt($('#nav > a[href^="/artist/profile-"]').attr('href').match(/\d+$/)[0])
+          resolve({ id, name, alias, photoURL })
         })
       }).on('error', (e) => { reject(e) })
     })
@@ -271,12 +268,88 @@ module.exports = class {
     })
   }
 
-  static getArtistTop100Song (id, page) {
+  static getArtistAlbumIds (id, page = 1) {
+    return new Promise((resolve, reject) => {
+      http.get(`http://www.xiami.com/artist/album-${id}?page=${page}`, (res) => {
+        const { statusCode } = res
+        let error
+        if (statusCode !== 200) {
+          error = new Error(`Request Failed.\n` +
+                      `Status Code: ${statusCode}`)
+        }
+        if (error) {
+          reject(error)
+          res.resume()
+          return
+        }
 
+        res.setEncoding('utf8')
+        let rawData = ''
+        res.on('data', (chunk) => { rawData += chunk })
+        res.on('end', () => {
+          const $ = cheerio.load(rawData)
+          const ids = []
+          $('.album_item100_thread a.preview').each((_, element) => {
+            ids.push(parseInt($(element).attr('id')))
+          })
+          resolve(ids)
+        })
+      }).on('error', (e) => { reject(e) })
+    })
+  }
+
+  static getArtistTop100SongIds (id, page = 1) {
+    return new Promise((resolve, reject) => {
+      http.get(`http://www.xiami.com/artist/top-${id}?page=${page}`, (res) => {
+        const { statusCode } = res
+        let error
+        if (statusCode !== 200) {
+          error = new Error(`Request Failed.\n` +
+                      `Status Code: ${statusCode}`)
+        }
+        if (error) {
+          reject(error)
+          res.resume()
+          return
+        }
+
+        res.setEncoding('utf8')
+        let rawData = ''
+        res.on('data', (chunk) => { rawData += chunk })
+        res.on('end', () => {
+          const $ = cheerio.load(rawData)
+          const ids = []
+          $('input[name="ids"]').each((_, element) => {
+            ids.push(parseInt($(element).attr('value')))
+          })
+          resolve(ids)
+        })
+      }).on('error', (e) => { reject(e) })
+    })
   }
 
   static getArtist (id) {
     return new Promise((resolve, reject) => {
+      this.getArtistInfo(id).then(({
+        id,
+        name,
+        alias,
+        photoURL
+      }) => {
+        this.getArtistDescription(id).then((description) => {
+          resolve(new Artist({
+            id,
+            name,
+            alias,
+            photoURL,
+            description
+          }))
+        }).catch((e) => { reject(e) })
+      }).catch((e) => { reject(e) })
     })
   }
 }
+
+const Song = require('./song')
+const Album = require('./album')
+const Artist = require('./artist')

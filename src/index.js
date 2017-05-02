@@ -1,7 +1,6 @@
-const utils = require('./utils')
-const Song = require('./song')
-
 module.exports = {
-  utils,
-  Song
+  util: require('./util'),
+  Song: require('./song'),
+  Album: require('./album'),
+  Artist: require('./artist')
 }
