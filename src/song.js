@@ -1,14 +1,16 @@
 class Song {
   constructor ({
     id = null,
-    name = null,
+    title = null,
+    subtitle = null,
     albumId = null,
     artistIds = null,
     audioURL = null,
     lyricsURL = null
   } = {}) {
     this._id = id
-    this._name = name
+    this._title = title
+    this._subtitle = subtitle
     this._albumId = albumId
     this._artistIds = artistIds
     this._audioURL = audioURL
@@ -19,8 +21,12 @@ class Song {
     return this._id
   }
 
-  get name () {
+  get title () {
     return this._name
+  }
+
+  get subtitle () {
+    return this._subtitle
   }
 
   get album () {

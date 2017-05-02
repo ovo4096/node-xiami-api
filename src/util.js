@@ -65,10 +65,12 @@ module.exports = class {
             artistIds.push($(element).attr('href').match(/\w+$/)[0])
           })
           const id = parseInt($('#qrcode > .acts').text().trim())
-          const name = $('#title > h1').clone().children().remove().end().text().trim()
+          const title = $('#title > h1').clone().children().remove().end().text().trim()
+          let subtitle = $('#title > h1 > span').clone().children().remove().end().text().trim()
+          subtitle = subtitle === '' ? null : subtitle
           const albumId = parseInt($('#albumCover').attr('href').match(/\d+/))
 
-          resolve({ id, name, albumId, artistIds })
+          resolve({ id, title, subtitle, albumId, artistIds })
         })
       }).on('error', (e) => {
         reject(e)
@@ -152,11 +154,12 @@ module.exports = class {
 
   static getSong (id) {
     return new Promise((resolve, reject) => {
-      this.getSongInfo(id).then(({ id, name, albumId, artistIds }) => {
+      this.getSongInfo(id).then(({ id, title, subtitle, albumId, artistIds }) => {
         Promise.all([ this.getSongAudioURL(id), this.getSongLyricsURL(id) ]).then((values) => {
           resolve(new Song({
             id,
-            name,
+            title,
+            subtitle,
             albumId,
             artistIds,
             audioURL: values[0],
@@ -189,7 +192,9 @@ module.exports = class {
           const $ = cheerio.load(rawData)
 
           const id = parseInt($('#qrcode > .acts').text().trim())
-          const name = $('#title > h1').clone().children().remove().end().text().trim()
+          const title = $('#title > h1').clone().children().remove().end().text().trim()
+          let subtitle = $('#title > h1 > span').clone().children().remove().end().text().trim()
+          subtitle = subtitle === '' ? null : subtitle
           const tracklistIds = []
           $('#track .chkbox > input').each((_, element) => {
             tracklistIds.push(parseInt($(element).attr('value')))
@@ -199,7 +204,8 @@ module.exports = class {
           const description = htmlToText.fromString($('#album_intro [property="v:summary"]').text())
           resolve(new Album({
             id,
-            name,
+            title,
+            subtitle,
             tracklistIds,
             artistId,
             coverURL,
