@@ -239,7 +239,10 @@ module.exports = class {
 
           const name = $('#artist_profile > .content.clearfix > p > a').clone().children().remove().end().text().trim()
           const alias = $('#artist_profile > .content.clearfix > p > a > span').clone().children().remove().end().text().trim()
-          const photoURL = url.parse($('#artist_profile > .content.clearfix > a > img').attr('src').replace('_3', ''))
+          let photoURL = url.parse($('#artist_profile > .content.clearfix > a > img').attr('src').replace('_3', ''))
+          if (photoURL.href === 'http://img.xiami.net/res/img/default/cd100.gif') {
+            photoURL = null
+          }
           const id = parseInt($('#nav > a[href^="/artist/profile-"]').attr('href').match(/\d+$/)[0])
           resolve({ id, name, alias, photoURL })
         })
