@@ -12,7 +12,7 @@ class Song {
     this._title = title
     this._subtitle = subtitle
     this._albumId = albumId
-    this._artistIds = artistIds
+    this._artists = new LazyLoadCollection(Artist.get, artistIds)
     this._audioURL = audioURL
     this._lyricsURL = lyricsURL
   }
@@ -30,15 +30,11 @@ class Song {
   }
 
   get album () {
-    return Album.getInstance(this._albumId)
+    return Album.get(this._albumId)
   }
 
   get artists () {
-    const artists = []
-    for (const id of this._artistIds) {
-      artists.push(Artist.getInstance(id))
-    }
-    return Promise.all(artists)
+    return this._artists
   }
 
   get audioURL () {
@@ -49,7 +45,7 @@ class Song {
     return this._lyricsURL
   }
 
-  static getInstance (id) {
+  static get (id) {
     return util.getSong(id)
   }
 }
@@ -59,3 +55,4 @@ module.exports = Song
 const util = require('./util')
 const Album = require('./album')
 const Artist = require('./artist')
+const LazyLoadCollection = require('./_lazy-load-collection')

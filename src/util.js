@@ -277,6 +277,10 @@ module.exports = class {
     })
   }
 
+  static get artistAlbumsPerPage () {
+    return 9
+  }
+
   static getArtistAlbumIds (id, page = 1) {
     return new Promise((resolve, reject) => {
       http.get(`http://www.xiami.com/artist/album-${id}?page=${page}`, (res) => {
@@ -305,6 +309,10 @@ module.exports = class {
         })
       }).on('error', (e) => { reject(e) })
     })
+  }
+
+  static get artistTop100SongsPerPage () {
+    return 20
   }
 
   static getArtistTop100SongIds (id, page = 1) {
