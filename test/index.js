@@ -1,8 +1,10 @@
 const { Artist } = require('../src')
 
-Artist.get('caEP216c9').then((artist) => {
-  artist.albums.get(0).then((album) => {
-    console.log(album)
+Artist.get('iim17edb').then((artist) => {
+  artist.albums.slice(-2).then((albums) => {
+    for (const album of albums) {
+      console.log(album.title)
+    }
   }).catch((e) => {
     console.log(e)
   })

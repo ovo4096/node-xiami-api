@@ -3,7 +3,7 @@ const cheerio = require('cheerio')
 const url = require('url')
 const htmlToText = require('html-to-text')
 
-module.exports = class {
+module.exports = class Util {
   /**
    * The decoding method is implemented by https://github.com/Flowerowl/xiami/blob/master/xiami.php
    */
@@ -107,7 +107,7 @@ module.exports = class {
             const parsedData = JSON.parse(rawData)
             let audioURL = null
             if (parsedData.status === 1 && parsedData.location !== '') {
-              audioURL = url.parse(this.decodeLocation(parsedData.location))
+              audioURL = url.parse(Util.decodeLocation(parsedData.location))
             }
             resolve(audioURL)
           } catch (e) {
@@ -154,14 +154,17 @@ module.exports = class {
 
   static getSong (id) {
     return new Promise((resolve, reject) => {
-      this.getSongInfo(id).then(({ id, title, subtitle, albumId, artistIds }) => {
-        Promise.all([ this.getSongAudioURL(id), this.getSongLyricsURL(id) ]).then((values) => {
+      Util.getSongInfo(id).then(({ id, title, subtitle, albumId, artistIds }) => {
+        Promise.all([
+          Util.getSongAudioURL(id),
+          Util.getSongLyricsURL(id)
+        ]).then((values) => {
           resolve(new Song({
             id,
             title,
             subtitle,
             albumId,
-            artistIds,
+            artists: new LazyLoadCollection(Util.getArtist, artistIds),
             audioURL: values[0],
             lyricsURL: values[1]
           }))
@@ -206,7 +209,7 @@ module.exports = class {
             id,
             title,
             subtitle,
-            tracklistIds,
+            tracklist: new LazyLoadCollection(Util.getSong, tracklistIds),
             artistId,
             coverURL,
             description
@@ -305,7 +308,8 @@ module.exports = class {
           $('.album_item100_thread a.preview').each((_, element) => {
             ids.push(parseInt($(element).attr('id')))
           })
-          resolve(ids)
+          let total = parseInt($('.cate_viewmode .counts').text().match(/\d+/))
+          resolve({ ids, total })
         })
       }).on('error', (e) => { reject(e) })
     })
@@ -339,7 +343,9 @@ module.exports = class {
           $('input[name="ids"]').each((_, element) => {
             ids.push(parseInt($(element).attr('value')))
           })
-          resolve(ids)
+          let total = $('.all_page > span').text()
+          total = total === '' ? 0 : total.match(/(\d+)\W*\)$/)[1]
+          resolve({ ids, total })
         })
       }).on('error', (e) => { reject(e) })
     })
@@ -347,19 +353,33 @@ module.exports = class {
 
   static getArtist (id) {
     return new Promise((resolve, reject) => {
-      this.getArtistInfo(id).then(({
+      Util.getArtistInfo(id).then(({
         id,
         name,
         alias,
         photoURL
       }) => {
-        this.getArtistDescription(id).then((description) => {
+        Promise.all([
+          PaginationLazyLoadCollection.create(
+            Util.getAlbum,
+            (page) => Util.getArtistAlbumIds(id, page),
+            Util.artistAlbumsPerPage
+          ),
+          PaginationLazyLoadCollection.create(
+            Util.getSong,
+            (page) => Util.getArtistTop100SongIds(id, page),
+            Util.artistTop100SongsPerPage
+          ),
+          Util.getArtistDescription(id)
+        ]).then((values) => {
           resolve(new Artist({
             id,
             name,
             alias,
             photoURL,
-            description
+            albums: values[0],
+            top100Songs: values[1],
+            description: values[2]
           }))
         }).catch((e) => { reject(e) })
       }).catch((e) => { reject(e) })
@@ -370,3 +390,5 @@ module.exports = class {
 const Song = require('./song')
 const Album = require('./album')
 const Artist = require('./artist')
+const LazyLoadCollection = require('./_lazy-load-collection')
+const PaginationLazyLoadCollection = require('./_pagination-lazy-load-collection')

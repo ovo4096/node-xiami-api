@@ -13,8 +13,8 @@ class Artist {
     this._alias = alias
     this._photoURL = photoURL
     this._description = description
-    this._albums = new PaginationLazyLoadCollection(util.getAlbum, (page) => util.getArtistAlbumIds(id, page), util.artistAlbumsPerPage)
-    this._top100Songs = new PaginationLazyLoadCollection(util.getSong, (page) => util.getArtistTop100SongIds(id, page), util.artistTop100SongsPerPage)
+    this._albums = albums
+    this._top100Songs = top100Songs
   }
 
   get id () {
@@ -53,4 +53,3 @@ class Artist {
 module.exports = Artist
 
 const util = require('./util')
-const PaginationLazyLoadCollection = require('./_pagination-lazy-load-collection')

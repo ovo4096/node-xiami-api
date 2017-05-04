@@ -4,7 +4,7 @@ class Album {
     title = null,
     subtitle = null,
     artistId = null,
-    tracklistIds = null,
+    tracklist = null,
     coverURL = null,
     description = null
   } = {}) {
@@ -12,7 +12,7 @@ class Album {
     this._title = title
     this._subtitle = subtitle
     this._artistId = artistId
-    this._tracklist = new LazyLoadCollection(Song.get, tracklistIds)
+    this._tracklist = tracklist
     this._coverURL = coverURL
     this._description = description
   }
@@ -30,7 +30,7 @@ class Album {
   }
 
   get artist () {
-    return Artist.get(this._artistId)
+    return util.getArtist(this._artistId)
   }
 
   get tracklist () {
@@ -53,6 +53,3 @@ class Album {
 module.exports = Album
 
 const util = require('./util')
-const Song = require('./song')
-const Artist = require('./artist')
-const LazyLoadCollection = require('./_lazy-load-collection')
