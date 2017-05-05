@@ -10,7 +10,7 @@ class PaginationLazyLoadCollection {
     return this._getAndFillIds(index)
   }
 
-  _getAndFillIds (index, fillIds = false) {
+  _getAndFillIds (index, onlyFillIds = false) {
     return new Promise((resolve, reject) => {
       if (index < 0 && index) {
         reject(new Error('Index is out of bounds'))
@@ -25,7 +25,6 @@ class PaginationLazyLoadCollection {
       if (this._ids[index] === undefined) {
         const page = Math.ceil((index + 1) / this._perPage)
         this._paginationGetter(page).then(({ ids, total }) => {
-          console.log('tick')
           if (this._length === undefined) {
             this._length = total
           }
@@ -35,7 +34,7 @@ class PaginationLazyLoadCollection {
             this._ids[ii] = ids[i]
           }
 
-          if (fillIds) {
+          if (onlyFillIds) {
             resolve(null)
             return
           }
@@ -65,7 +64,7 @@ class PaginationLazyLoadCollection {
 
   get all () {
     return new Promise((resolve, reject) => {
-      this._fillAllIds().then(() => {
+      this._slice().then(() => {
         const getAllValues = []
         for (const id of this._ids) {
           getAllValues.push(this._getter(id))
@@ -81,24 +80,40 @@ class PaginationLazyLoadCollection {
     })
   }
 
-  _fillAllIds () {
-    const totalPage = Math.ceil(this._length / this._perPage)
-    const getAllIds = []
+  _slice (begin, end) {
+    end = (typeof end !== 'undefined') ? end : this._length
+    let size
+    const len = this.length
 
-    console.log(totalPage)
+    let start = begin || 0
+    start = (start >= 0) ? start : len + start
 
-    for (let i = 1; i <= totalPage; i++) {
-      if (this._ids[i * this._perPage - this._perPage] === undefined) {
-        getAllIds.push(this._getAndFillIds(i * this._perPage - this._perPage, true))
+    let upTo = (end) || len
+    if (end < 0) {
+      upTo = len + end
+    }
+
+    size = upTo - start
+
+    const fillIds = []
+
+    if (size > 0) {
+      const startPage = Math.ceil((start + 1) / this._perPage)
+      const endPage = Math.ceil((start + size) / this._perPage)
+      for (let i = startPage; i <= endPage; i++) {
+        if (this._ids[i * this._perPage - this._perPage] === undefined) {
+          fillIds.push(this._getAndFillIds(i * this._perPage - this._perPage, true))
+        }
       }
     }
-    return Promise.all(getAllIds)
+
+    return Promise.all(fillIds)
   }
 
-  slice (begin, end) {
+  slice (start, end) {
     return new Promise((resolve, reject) => {
-      this._fillAllIds().then(() => {
-        const sliceIds = this._ids.slice(begin, end)
+      this._slice(start, end).then(() => {
+        const sliceIds = this._ids.slice(start, end)
         const getValues = []
         for (const id of sliceIds) {
           getValues.push(this._getter(id))
