@@ -62,7 +62,7 @@ class PaginationLazyLoadCollection {
     return this._length
   }
 
-  get all () {
+  getAll () {
     return new Promise((resolve, reject) => {
       this._slice().then(() => {
         const getAllValues = []
@@ -83,7 +83,7 @@ class PaginationLazyLoadCollection {
   _slice (begin, end) {
     end = (typeof end !== 'undefined') ? end : this._length
     let size
-    const len = this.length
+    let len = parseInt(this._length)
 
     let start = begin || 0
     start = (start >= 0) ? start : len + start

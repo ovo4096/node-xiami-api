@@ -15,7 +15,7 @@ class LazyLoadCollection {
     return this._ids.length
   }
 
-  get all () {
+  getAll () {
     return Promise.all([...this])
   }
 

@@ -1,9 +1,9 @@
 const { Artist } = require('../src')
 
 Artist.get('iim17edb').then((artist) => {
-  artist.albums.slice(-1).then((albums) => {
-    console.log(albums)
-    console.log(albums.length)
+  artist.top100Songs.slice(-1).then((songs) => {
+    console.log(songs)
+    console.log(songs.length)
   })
 }).catch((e) => {
   console.log(e)
