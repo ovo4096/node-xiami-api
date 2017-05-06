@@ -344,7 +344,7 @@ module.exports = class Util {
             ids.push(parseInt($(element).attr('value')))
           })
           let total = $('.all_page > span').text()
-          total = total === '' ? 0 : total.match(/(\d+)\W*\)$/)[1]
+          total = total === '' ? 0 : parseInt(total.match(/(\d+)\W*\)$/)[1])
           resolve({ ids, total })
         })
       }).on('error', (e) => { reject(e) })

@@ -83,7 +83,7 @@ class PaginationLazyLoadCollection {
   _slice (begin, end) {
     end = (typeof end !== 'undefined') ? end : this._length
     let size
-    let len = parseInt(this._length)
+    let len = this._length
 
     let start = begin || 0
     start = (start >= 0) ? start : len + start
