@@ -1,10 +1,7 @@
 const crawler = require('../src/crawler')
 
-crawler.getFeaturedCollection(154166515).then((data) => {
-  for (const song of data.tracklist) {
-    console.log(song.title)
-    console.log(song.artists)
-  }
+crawler.getFeaturedCollection(154166515).then((featuredCollection) => {
+  console.log(featuredCollection)
 }).catch((e) => {
   console.log(e)
 })

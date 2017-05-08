@@ -21,36 +21,46 @@ function getFeaturedCollection (id) {
       res.on('data', (chunk) => { rawData += chunk })
       res.on('end', () => {
         const $ = cheerio.load(rawData)
+
         const title = $('h2').text().trim()
         const tracklist = []
-        const auther = {}
-        const introduction = ''
+        const auther = {
+          id: parseInt($('h4 > a').attr('name_card')),
+          name: $('h4 > a').text().trim()
+        }
+        const introduction = $('.info_intro_full').text()
+        const id = parseInt($('#qrcode > span').text())
 
         $('.quote_song_list > ul > li').each((_, element) => {
           const $element = $(element)
           const $input = $element.find('input[type="checkbox"]')
 
           const id = parseInt($input.attr('value'))
-          const isAvailable = $input.is(':checked')
-          const title = isAvailable
+          const canPlay = $input.is(':checked')
+          const title = canPlay
                           ? $element.find('.song_toclt').attr('title').trim().match(/^添加(.*)到歌单$/)[1]
                           : $element.find('.song_name').clone().children().remove().end().text().trim().match(/^(.*)\s--\s*;*$/)[1]
           const artists = []
+          let introduction = $element.find('#des_').text().trim()
+          introduction = introduction === '' ? null : introduction
 
           $element.find('.song_name > a[href^="/artist/"], .song_name > a[href^="http://www.xiami.com/search/find"]').each((_, element) => {
             const $element = $(element)
+            const href = $element.attr('href')
 
             const name = $element.text().trim()
-            artists.push({ name })
+            const id = href.match(/^http:\/\/www\.xiami\.com\/search\/find.*/) === null ? null : href.match(/\w+$/)[0]
+            artists.push({ name, id })
           })
 
-          tracklist.push({ id, isAvailable, title, artists })
+          tracklist.push({ id, title, artists, introduction, canPlay })
         })
         resolve({
+          id,
           title,
-          tracklist,
           auther,
-          introduction
+          introduction,
+          tracklist
         })
       })
     })
