@@ -1,7 +1,7 @@
-class Feature {
+class Featured {
   constructor (id) {
     this._id = id
   }
 }
 
-module.exports = Feature
+module.exports = Featured

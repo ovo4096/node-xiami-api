@@ -385,6 +385,44 @@ module.exports = class Util {
       }).catch((e) => { reject(e) })
     })
   }
+
+  static getFeatured (id) {
+    return new Promise((resolve, reject) => {
+      http.get(`http://www.xiami.com/collect/${id}`, (res) => {
+        const { statusCode } = res
+        let error
+        if (statusCode !== 200) {
+          error = new Error(`Request Failed.\n` +
+                      `Status Code: ${statusCode}`)
+        }
+        if (error) {
+          reject(error)
+          res.resume()
+          return
+        }
+
+        res.setEncoding('utf8')
+        let rawData = ''
+        res.on('data', (chunk) => { rawData += chunk })
+        res.on('end', () => {
+          const $ = cheerio.load(rawData)
+          const id = parseInt($('#qrcode > span').text())
+          let coverURL = $('#cover_logo a').attr('href')
+          coverURL = coverURL === 'http://pic.xiami.net/res/img/default/collect_default_cover.png' ? null : url.parse(coverURL)
+          const authorId = parseInt($('.collect_author_info > h4 > a').attr('name_card'))
+          const description = htmlToText.fromString($('.info_intro_full').html())
+          const tracklistIds = []
+
+          $('.quote_song_list input[type="checkbox"]').each((_, element) => {
+            tracklistIds.push(parseInt($(element).attr('value')))
+          })
+          resolve({ id, authorId, coverURL, description, tracklistIds })
+        })
+      }).on('error', (e) => {
+        reject(e)
+      })
+    })
+  }
 }
 
 const Song = require('./song')
