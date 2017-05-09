@@ -12,18 +12,18 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getArtistIdByName('MYTH & ROID').then((id) => {
+const searchName = 'sx'
+crawler.getArtistIdByName(searchName).then((id) => {
   if (id === null) {
-    crawler.searchArtists('MYTH & ROID').then((searchResult) => {
-      if (searchResult.data.length > 0) {
-        console.log(searchResult.data[0].id)
-      }
+    crawler.searchArtists(searchName).then((result) => {
+      if (result === null) return
+      console.log(result.data[0].id)
     }).catch((e) => {
       console.log(e)
     })
-  } else {
-    console.log(id)
+    return
   }
+  console.log(id)
 }).catch((e) => {
 
 })

@@ -120,7 +120,13 @@ function searchArtists (keyword, page = 1) {
       res.on('data', (chunk) => { rawData += chunk })
       res.on('end', () => {
         const $ = cheerio.load(rawData)
-        const total = parseInt($('.seek_counts.ok > b').text().trim())
+
+        const total = parseInt($('.seek_counts.ok > b:first-child').text().trim())
+        if (total === 0) {
+          resolve(null)
+          return
+        }
+
         const data = []
         const lastPage = Math.ceil(total / MAX_SEARCH_ARTISTS_PAGE_ITEMS)
 
