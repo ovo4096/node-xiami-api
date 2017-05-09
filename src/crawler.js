@@ -1,6 +1,6 @@
 const http = require('http')
-const url = require('url')
 const cheerio = require('cheerio')
+const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 
 function getFeaturedCollection (id) {
   return new Promise((resolve, reject) => {
@@ -70,13 +70,14 @@ function getFeaturedCollection (id) {
   })
 }
 
-function searchArtistURLByName (name) {
+function getArtistIdByName (name) {
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/search/find?artist=${encodeURIComponent(name)}`, (res) => {
       const { statusCode, headers } = res
 
       let error
-      if (statusCode !== 301) {
+      if (statusCode !== 301 && statusCode !== 302) {
+        console.log(encodeURIComponent(name))
         error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
       }
       if (error) {
@@ -85,8 +86,58 @@ function searchArtistURLByName (name) {
         return
       }
 
-      resolve(url.parse(headers.location))
-      res.resume()
+      if (statusCode === 302) {
+        resolve(null)
+        res.resume()
+      } else {
+        resolve(headers.location.match(/\w+$/)[0])
+        res.resume()
+      }
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
+function searchArtists (keyword, page = 1) {
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/search/artist/page/${page}?key=${encodeURIComponent(keyword)}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        console.log(encodeURIComponent(keyword))
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const total = parseInt($('.seek_counts.ok > b').text().trim())
+        const data = []
+        const lastPage = Math.ceil(total / MAX_SEARCH_ARTISTS_PAGE_ITEMS)
+
+        $('.artistBlock_list > ul > li').each((_, element) => {
+          const $element = $(element)
+          const $title = $element.find('.title')
+
+          const name = $title.attr('title')
+          let aliases = $title.find('.singer_names').text().trim().match(/^\((.*)\)$/)
+          aliases = aliases === null ? [] : aliases[1].split(' / ')
+          const id = $title.attr('href').match(/\w+$/)[0]
+
+          data.push({ id, name, aliases })
+        })
+
+        resolve({ total, lastPage, page, data })
+      })
     }).on('error', (e) => {
       reject(e)
     })
@@ -95,5 +146,7 @@ function searchArtistURLByName (name) {
 
 module.exports = {
   getFeaturedCollection,
-  searchArtistURLByName
+  getArtistIdByName,
+  searchArtists,
+  MAX_SEARCH_ARTISTS_PAGE_ITEMS
 }

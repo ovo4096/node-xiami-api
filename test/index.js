@@ -6,8 +6,24 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.searchArtistURLByName('加隈亜衣').then((url) => {
-  console.log(url)
+// crawler.searchArtists('sx').then((searchResult) => {
+//   console.log(searchResult)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getArtistIdByName('MYTH & ROID').then((id) => {
+  if (id === null) {
+    crawler.searchArtists('MYTH & ROID').then((searchResult) => {
+      if (searchResult.data.length > 0) {
+        console.log(searchResult.data[0].id)
+      }
+    }).catch((e) => {
+      console.log(e)
+    })
+  } else {
+    console.log(id)
+  }
 }).catch((e) => {
-  console.log(e)
+
 })
