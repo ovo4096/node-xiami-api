@@ -1,4 +1,5 @@
 const http = require('http')
+const url = require('url')
 const cheerio = require('cheerio')
 
 function getFeaturedCollection (id) {
@@ -63,10 +64,36 @@ function getFeaturedCollection (id) {
           tracklist
         })
       })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
+function searchArtistURLByName (name) {
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/search/find?artist=${encodeURIComponent(name)}`, (res) => {
+      const { statusCode, headers } = res
+
+      let error
+      if (statusCode !== 301) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      resolve(url.parse(headers.location))
+      res.resume()
+    }).on('error', (e) => {
+      reject(e)
     })
   })
 }
 
 module.exports = {
-  getFeaturedCollection
+  getFeaturedCollection,
+  searchArtistURLByName
 }
