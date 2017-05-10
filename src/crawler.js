@@ -150,9 +150,49 @@ function searchArtists (keyword, page = 1) {
   })
 }
 
+function getArtistIdBySearch (keyword) {
+  return new Promise((resolve, reject) => {
+    searchArtists(keyword).then((result) => {
+      if (result === null) {
+        resolve(null)
+        return
+      }
+      resolve(result.data[0].id)
+    }).catch((e) => {
+      reject(e)
+    })
+  })
+}
+
+function getArtistIdByNameOrSearch (nameOrKeyword) {
+  return new Promise((resolve, reject) => {
+    getArtistIdByName(nameOrKeyword).then((id) => {
+      if (id !== null) {
+        resolve(id)
+        return
+      }
+
+      getArtistIdBySearch(nameOrKeyword).then((id) => {
+        if (id === null) {
+          resolve(null)
+          return
+        }
+
+        resolve(id)
+      }).catch((e) => {
+        reject(e)
+      })
+    }).catch((e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
+  getArtistIdBySearch,
+  getArtistIdByNameOrSearch,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS
 }
