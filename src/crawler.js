@@ -77,7 +77,6 @@ function getArtistIdByName (name) {
 
       let error
       if (statusCode !== 301 && statusCode !== 302) {
-        console.log(encodeURIComponent(name))
         error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
       }
       if (error) {
@@ -106,7 +105,6 @@ function searchArtists (keyword, page = 1) {
 
       let error
       if (statusCode !== 200) {
-        console.log(encodeURIComponent(keyword))
         error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
       }
       if (error) {
@@ -188,11 +186,47 @@ function getArtistIdByNameOrSearch (nameOrKeyword) {
   })
 }
 
+function getArtistProfile (id) {
+  if (isNaN(parseInt(id))) throw new Error('Argument `id` must be a numeric type')
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/artist/profile-${id}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const $name = $('#artist_profile > .content > p > a')
+        const introduction = $('#main > .profile').html()
+        const name = $name.clone().children().remove().end().text().trim()
+        let aliases = $name.find('span').text().trim()
+        aliases = aliases === '' ? [] : aliases.split(' / ')
+
+        resolve({ id, introduction, name, aliases })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
   getArtistIdBySearch,
   getArtistIdByNameOrSearch,
+  getArtistProfile,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS
 }
