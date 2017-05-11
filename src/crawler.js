@@ -4,6 +4,7 @@ const cheerio = require('cheerio')
 
 const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
+const MAX_ARTIST_TOP100_PAGE_ITEMS = 20
 
 function getFeaturedCollection (id) {
   return new Promise((resolve, reject) => {
@@ -102,6 +103,7 @@ function getArtistIdByName (name) {
 }
 
 function searchArtists (keyword, page = 1) {
+  if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/search/artist/page/${page}?key=${encodeURIComponent(keyword)}`, (res) => {
       const { statusCode } = res
@@ -230,6 +232,7 @@ function getArtistProfile (id) {
 }
 
 function getArtistAlbums (id, page = 1) {
+  if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/artist/album-${id}?page=${page}`, (res) => {
       const { statusCode } = res
@@ -280,6 +283,57 @@ function getArtistAlbums (id, page = 1) {
   })
 }
 
+function getArtistTop100Songs (id, page = 1) {
+  if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/artist/top-${id}?page=${page}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const total = parseInt($('.all_page > span').text().match(/(\d+).{2}$/)[1])
+        if (total === 0) {
+          resolve(null)
+          return
+        }
+
+        const data = []
+        const lastPage = Math.ceil(total / MAX_ARTIST_TOP100_PAGE_ITEMS)
+        if (page > lastPage) {
+          resolve(null)
+          return
+        }
+
+        $('.track_list > tbody > tr').each((_, element) => {
+          const $element = $(element)
+          const $name = $element.find('.song_name > a')
+
+          const title = $name.attr('title').trim()
+          const id = parseInt($element.find('input[type="checkbox"]').attr('value'))
+          data.push({ id, title })
+        })
+
+        resolve({ total, lastPage, page, data })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
@@ -287,7 +341,9 @@ module.exports = {
   getArtistIdByNameOrSearch,
   getArtistProfile,
   getArtistAlbums,
+  getArtistTop100Songs,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
-  MAX_ARTIST_ALBUMS_PAGE_ITEMS
+  MAX_ARTIST_ALBUMS_PAGE_ITEMS,
+  MAX_ARTIST_TOP100_PAGE_ITEMS
 }

@@ -32,7 +32,13 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.searchArtists('周杰伦').then((result) => {
+// crawler.searchArtists('周杰伦').then((result) => {
+//   console.log(result)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getArtistTop100Songs(83497).then((result) => {
   console.log(result)
 }).catch((e) => {
   console.log(e)
