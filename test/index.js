@@ -32,8 +32,8 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getArtistAlbums(1421, 5).then((albums) => {
-  console.log(albums)
+crawler.searchArtists('周杰伦').then((result) => {
+  console.log(result)
 }).catch((e) => {
   console.log(e)
 })

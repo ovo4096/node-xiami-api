@@ -130,6 +130,10 @@ function searchArtists (keyword, page = 1) {
 
         const data = []
         const lastPage = Math.ceil(total / MAX_SEARCH_ARTISTS_PAGE_ITEMS)
+        if (page > lastPage) {
+          resolve(null)
+          return
+        }
 
         $('.artistBlock_list > ul > li').each((_, element) => {
           const $element = $(element)
@@ -139,8 +143,9 @@ function searchArtists (keyword, page = 1) {
           let aliases = $title.find('.singer_names').text().trim().match(/^\((.*)\)$/)
           aliases = aliases === null ? [] : aliases[1].split(' / ')
           const id = $title.attr('href').match(/\w+$/)[0]
+          const photoURL = url.parse($element.find('.artist100 > img').attr('src').replace(/@.*$/, ''))
 
-          data.push({ id, name, aliases })
+          data.push({ id, name, aliases, photoURL })
         })
 
         resolve({ total, lastPage, page, data })
