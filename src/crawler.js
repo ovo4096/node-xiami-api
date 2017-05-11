@@ -27,7 +27,7 @@ function getFeaturedCollection (id) {
       res.on('end', () => {
         const $ = cheerio.load(rawData)
 
-        const title = $('h2').text().trim()
+        const title = $('h2').clone().children().remove().end().text().trim()
         const tracklist = []
         const auther = {
           id: parseInt($('h4 > a').attr('name_card')),
