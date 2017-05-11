@@ -44,7 +44,7 @@ function getFeaturedCollection (id) {
           const canPlay = $input.is(':checked')
           const title = canPlay
                           ? $element.find('.song_toclt').attr('title').trim().match(/^添加(.*)到歌单$/)[1]
-                          : $element.find('.song_name').clone().children().remove().end().text().trim().match(/^(.*)\s--\s*;*$/)[1]
+                          : $element.find('.song_name').text().trim().match(/^.*(?=\s*--)/)[0].trim()
           const artists = []
           let introduction = $element.find('#des_').text().trim()
           introduction = introduction === '' ? null : introduction

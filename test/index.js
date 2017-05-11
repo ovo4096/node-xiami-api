@@ -1,10 +1,10 @@
 const crawler = require('../src/crawler')
 
-// crawler.getFeaturedCollection(154166515).then((featuredCollection) => {
-//   console.log(featuredCollection)
-// }).catch((e) => {
-//   console.log(e)
-// })
+crawler.getFeaturedCollection(154166515).then((featuredCollection) => {
+  console.log(featuredCollection)
+}).catch((e) => {
+  console.log(e)
+})
 
 // const name = '西沢幸奏'
 
@@ -38,8 +38,14 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getArtistTop100Songs(83497).then((result) => {
-  console.log(result)
+// crawler.getArtistTop100Songs(83497).then((result) => {
+//   console.log(result)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getFeaturedCollection(774491).then((collection) => {
+  console.log(collection)
 }).catch((e) => {
   console.log(e)
 })
