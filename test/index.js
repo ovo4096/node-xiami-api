@@ -26,8 +26,14 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getArtistProfile(88987).then((profile) => {
-  console.log(profile)
+// crawler.getArtistProfile(88987).then((profile) => {
+//   console.log(profile)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getArtistAlbums(1421, 5).then((albums) => {
+  console.log(albums)
 }).catch((e) => {
   console.log(e)
 })

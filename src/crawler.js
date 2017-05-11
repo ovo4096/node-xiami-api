@@ -1,6 +1,9 @@
 const http = require('http')
+const url = require('url')
 const cheerio = require('cheerio')
+
 const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
+const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
 
 function getFeaturedCollection (id) {
   return new Promise((resolve, reject) => {
@@ -221,12 +224,65 @@ function getArtistProfile (id) {
   })
 }
 
+function getArtistAlbums (id, page = 1) {
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/artist/album-${id}?page=${page}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const total = parseInt($('.cate_viewmode .counts').text().match(/\d+/)[0])
+        if (total === 0) {
+          resolve(null)
+          return
+        }
+
+        const data = []
+        const lastPage = Math.ceil(total / MAX_ARTIST_ALBUMS_PAGE_ITEMS)
+
+        $('.albumThread_list > ul > li').each((_, element) => {
+          const $element = $(element)
+          const $name = $element.find('.name')
+          const $title = $name.find('a')
+
+          const title = $title.attr('title').trim()
+          let subtitle = $name.clone().children().remove().end().text().trim().match(/^\((.*)\)$/)
+          subtitle = subtitle === null ? subtitle : subtitle[1]
+          const id = parseInt($element.find('.album_item100_thread').attr('id').match(/\d+$/)[0])
+          const coverURL = url.parse($element.find('.CDcover100 > img').attr('src').replace(/@.*$/, ''))
+
+          data.push({ id, title, subtitle, coverURL })
+        })
+
+        resolve({ total, lastPage, page, data })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
   getArtistIdBySearch,
   getArtistIdByNameOrSearch,
   getArtistProfile,
+  getArtistAlbums,
   searchArtists,
-  MAX_SEARCH_ARTISTS_PAGE_ITEMS
+  MAX_SEARCH_ARTISTS_PAGE_ITEMS,
+  MAX_ARTIST_ALBUMS_PAGE_ITEMS
 }
