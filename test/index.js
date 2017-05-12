@@ -1,10 +1,10 @@
 const crawler = require('../src/crawler')
 
-crawler.getFeaturedCollection(154166515).then((featuredCollection) => {
-  console.log(featuredCollection)
-}).catch((e) => {
-  console.log(e)
-})
+// crawler.getFeaturedCollection(154166515).then((collection) => {
+//   console.log(collection.introduction)
+// }).catch((e) => {
+//   console.log(e)
+// })
 
 // const name = '西沢幸奏'
 
@@ -44,8 +44,19 @@ crawler.getFeaturedCollection(154166515).then((featuredCollection) => {
 //   console.log(e)
 // })
 
-crawler.getFeaturedCollection(774491).then((collection) => {
-  console.log(collection)
+// crawler.getFeaturedCollection(774491).then((collection) => {
+//   console.log(collection.introduction)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getArtistIdByName('周杰伦').then((id) => {
+  if (id === null) return
+  crawler.getArtistProfile(id).then((profile) => {
+    console.log(profile.introduction)
+  }).catch((e) => {
+    console.log(e)
+  })
 }).catch((e) => {
   console.log(e)
 })

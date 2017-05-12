@@ -1,6 +1,7 @@
 const http = require('http')
 const url = require('url')
 const cheerio = require('cheerio')
+const util = require('./util')
 
 const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
@@ -33,7 +34,7 @@ function getFeaturedCollection (id) {
           id: parseInt($('h4 > a').attr('name_card')),
           name: $('h4 > a').text().trim()
         }
-        const introduction = $('.info_intro_full').text()
+        const introduction = util.editorTextFormatToString($('.info_intro_full').text().trim())
         const id = parseInt($('#qrcode > span').text())
 
         $('.quote_song_list > ul > li').each((_, element) => {
@@ -46,7 +47,7 @@ function getFeaturedCollection (id) {
                           ? $element.find('.song_toclt').attr('title').trim().match(/^添加(.*)到歌单$/)[1]
                           : $element.find('.song_name').text().trim().match(/^.*(?=\s*--)/)[0].trim()
           const artists = []
-          let introduction = $element.find('#des_').text().trim()
+          let introduction = util.editorTextFormatToString($element.find('#des_').text().trim())
           introduction = introduction === '' ? null : introduction
 
           $element.find('.song_name > a[href^="/artist/"], .song_name > a[href^="http://www.xiami.com/search/find"]').each((_, element) => {
@@ -197,37 +198,48 @@ function getArtistIdByNameOrSearch (nameOrKeyword) {
 }
 
 function getArtistProfile (id) {
-  if (isNaN(parseInt(id))) throw new Error('Argument `id` must be a numeric type')
   return new Promise((resolve, reject) => {
-    http.get(`http://www.xiami.com/artist/profile-${id}`, (res) => {
-      const { statusCode } = res
+    const query = (id) => {
+      http.get(`http://www.xiami.com/artist/profile-${id}`, (res) => {
+        const { statusCode } = res
 
-      let error
-      if (statusCode !== 200) {
-        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
-      }
-      if (error) {
-        res.resume()
-        reject(error)
-        return
-      }
+        let error
+        if (statusCode !== 200) {
+          error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+        }
+        if (error) {
+          res.resume()
+          reject(error)
+          return
+        }
 
-      res.setEncoding('utf8')
-      let rawData = ''
-      res.on('data', (chunk) => { rawData += chunk })
-      res.on('end', () => {
-        const $ = cheerio.load(rawData)
-        const $name = $('#artist_profile > .content > p > a')
-        const introduction = $('#main > .profile').html()
-        const name = $name.clone().children().remove().end().text().trim()
-        let aliases = $name.find('span').text().trim()
-        aliases = aliases === '' ? [] : aliases.split(' / ')
+        res.setEncoding('utf8')
+        let rawData = ''
+        res.on('data', (chunk) => { rawData += chunk })
+        res.on('end', () => {
+          const $ = cheerio.load(rawData)
+          const $name = $('#artist_profile > .content > p > a')
+          const introduction = util.editorTextFormatToString($('#main > .profile').text())
+          const name = $name.clone().children().remove().end().text().trim()
+          let aliases = $name.find('span').text().trim()
+          aliases = aliases === '' ? [] : aliases.split(' / ')
 
-        resolve({ id, introduction, name, aliases })
+          resolve({ id, introduction, name, aliases })
+        })
+      }).on('error', (e) => {
+        reject(e)
       })
-    }).on('error', (e) => {
-      reject(e)
-    })
+    }
+
+    if (typeof id === 'string') {
+      convertArtistStringIdToNumberId(id).then((id) => {
+        query(id)
+      }).catch((e) => {
+        reject(e)
+      })
+    } else {
+      query(id)
+    }
   })
 }
 
@@ -334,6 +346,36 @@ function getArtistTop100Songs (id, page = 1) {
   })
 }
 
+function convertArtistStringIdToNumberId (stringId) {
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/artist/similar-${stringId}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const id = parseInt($('.acts > a').attr('href').match(/\d+$/)[0])
+
+        resolve(id)
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
@@ -342,6 +384,7 @@ module.exports = {
   getArtistProfile,
   getArtistAlbums,
   getArtistTop100Songs,
+  convertArtistStringIdToNumberId,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
   MAX_ARTIST_ALBUMS_PAGE_ITEMS,
