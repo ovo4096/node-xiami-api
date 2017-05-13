@@ -61,8 +61,14 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getAlbum('kj2lb3d2c').then((album) => {
-  console.log(album)
+// crawler.getAlbum('kj2lb3d2c').then((album) => {
+//   console.log(album)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getSong('mQ6ed369641').then((song) => {
+  console.log(song)
 }).catch((e) => {
   console.log(e)
 })

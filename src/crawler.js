@@ -445,6 +445,55 @@ function getAlbum (id) {
   })
 }
 
+function getSong (id) {
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/song/${id}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const id = parseInt($('#qrcode .acts').text())
+        const title = $('h1').clone().children().remove().end().text().trim()
+
+        let subtitle = $('h1 > span').text().trim()
+        subtitle = subtitle === '' ? null : subtitle
+
+        const album = {
+          id: parseInt($('#albumCover').attr('href').match(/\d+$/)[0]),
+          title: $('#albums_info tr:first-of-type a').text().trim(),
+          coverURL: url.parse($('#albumCover').find('img').attr('src').replace(/@.*$/, ''))
+        }
+
+        const artists = []
+        $('#albums_info tr:nth-of-type(2) a').each((_, element) => {
+          const $element = $(element)
+          const id = $element.attr('href').match(/\w+$/)[0]
+          const name = $element.text().trim()
+
+          artists.push({ id, name })
+        })
+
+        resolve({ id, title, subtitle, album, artists })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
@@ -454,6 +503,7 @@ module.exports = {
   getArtistAlbums,
   getArtistTop100Songs,
   getAlbum,
+  getSong,
   convertArtistStringIdToNumberId,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
