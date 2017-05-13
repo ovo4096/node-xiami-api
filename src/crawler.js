@@ -30,12 +30,20 @@ function getFeaturedCollection (id) {
 
         const title = $('h2').clone().children().remove().end().text().trim()
         const tracklist = []
+
+        let avatarURL = $('.collect_cover > img').attr('src').replace(/@.*$/, '')
+        avatarURL = avatarURL.match(/\/\/pic\.xiami.net\/images\/default\/avatar/) !== null ? null : url.parse(avatarURL)
+
         const auther = {
           id: parseInt($('h4 > a').attr('name_card')),
-          name: $('h4 > a').text().trim()
+          name: $('h4 > a').text().trim(),
+          avatarURL
         }
         const introduction = util.editorTextFormatToString($('.info_intro_full').text().trim())
         const id = parseInt($('#qrcode > span').text())
+
+        let coverURL = $('.bigImgCover > img').attr('src').replace(/@.*$/, '')
+        coverURL = coverURL === 'http://pic.xiami.net/res/img/default/collect_default_cover.png' ? null : url.parse(coverURL)
 
         $('.quote_song_list > ul > li').each((_, element) => {
           const $element = $(element)
@@ -66,7 +74,8 @@ function getFeaturedCollection (id) {
           title,
           auther,
           introduction,
-          tracklist
+          tracklist,
+          coverURL
         })
       })
     }).on('error', (e) => {
@@ -376,6 +385,66 @@ function convertArtistStringIdToNumberId (stringId) {
   })
 }
 
+function getAlbum (id) {
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/album/${id}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const $title = $('h1')
+        const $artist = $('#album_info table tr:first-of-type a')
+
+        const id = parseInt($('#qrcode > .acts').text())
+        const title = $title.clone().children().remove().end().text().trim()
+
+        let subtitle = $title.find('span').text().trim()
+        subtitle = subtitle === '' ? null : subtitle
+
+        const tracklist = []
+        $('#track_list tr[data-needpay]').each((_, element) => {
+          const $element = $(element)
+          const $input = $element.find('input[type="checkbox"]')
+          const $name = $element.find('.song_name')
+
+          const id = parseInt($input.attr('value'))
+          const canPlay = $input.is(':checked')
+          const title = $name.find('a:first-of-type').text().trim()
+          let subtitle = $name.find('a:nth-of-type(2)').text().trim()
+          subtitle = subtitle === '' ? null : subtitle
+
+          tracklist.push({ id, canPlay, title, subtitle })
+        })
+
+        const artist = {
+          id: parseInt($('#nav > .last').attr('href').match(/\d+$/)[0]),
+          name: $artist.text().trim()
+        }
+
+        const coverURL = url.parse($('#cover_lightbox > img').attr('src').replace(/@.*$/, ''))
+        const introduction = util.editorTextFormatToString($('[property="v:summary"]').text().trim())
+
+        resolve({ id, title, subtitle, tracklist, artist, coverURL, introduction })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
@@ -384,6 +453,7 @@ module.exports = {
   getArtistProfile,
   getArtistAlbums,
   getArtistTop100Songs,
+  getAlbum,
   convertArtistStringIdToNumberId,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
