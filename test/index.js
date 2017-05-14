@@ -1,10 +1,12 @@
 const crawler = require('../src/crawler')
 
-// crawler.getFeaturedCollection(154166515).then((collection) => {
-//   console.log(collection)
-// }).catch((e) => {
-//   console.log(e)
-// })
+crawler.getFeaturedCollection(154166515).then((collection) => {
+  for (const song of collection.tracklist) {
+    console.log(song)
+  }
+}).catch((e) => {
+  console.log(e)
+})
 
 // const name = '西沢幸奏'
 
@@ -86,8 +88,8 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getUserFavoriteSongs(12119063, 2).then((favoriteSongs) => {
-  console.log(favoriteSongs)
-}).catch((e) => {
-  console.log(e)
-})
+// crawler.getUserFavoriteSongs(12119063, 2).then((favoriteSongs) => {
+//   console.log(favoriteSongs)
+// }).catch((e) => {
+//   console.log(e)
+// })

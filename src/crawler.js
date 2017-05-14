@@ -105,7 +105,7 @@ function getFeaturedCollection (id) {
             const href = $element.attr('href')
 
             const name = $element.text().trim()
-            const id = href.match(/^http:\/\/www\.xiami\.com\/search\/find.*/) === null ? null : href.match(/\w+$/)[0]
+            const id = href.match(/^http:\/\/www\.xiami\.com\/search\/find.*/) !== null ? null : href.match(/\w+$/)[0]
             artists.push({ name, id })
           })
 
