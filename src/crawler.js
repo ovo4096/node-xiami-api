@@ -5,6 +5,7 @@ const cheerio = require('cheerio')
 const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
 const MAX_ARTIST_TOP100_PAGE_ITEMS = 20
+const MAX_USER_FAVORITE_SONGS_PAGE_ITEMS = 25
 
 const TRACKLIST_TYPE_SONG = 0
 const TRACKLIST_TYPE_ALBUM = 1
@@ -643,6 +644,70 @@ function getSongHQAudioURL (id) {
   })
 }
 
+function getUserFavoriteSongs (id, page = 1) {
+  if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/space/lib-song/u/${id}/page/${page}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const total = parseInt($('.counts').text().match(/\d+/)[0])
+        if (total === 0) {
+          resolve(null)
+          return
+        }
+
+        const data = []
+        const lastPage = Math.ceil(total / MAX_USER_FAVORITE_SONGS_PAGE_ITEMS)
+        if (page > lastPage) {
+          resolve(null)
+          return
+        }
+
+        $('.track_list > tbody > tr').each((_, element) => {
+          const $element = $(element)
+          const $input = $element.find('input[type="checkbox"]')
+          const $name = $element.find('.song_name')
+
+          const id = parseInt($input.attr('value'))
+          const title = $name.find('a:first-of-type').text().trim()
+          const canBePlayed = $input.is(':checked')
+
+          const artists = []
+          $name.find('.artist_name').each((_, element) => {
+            const $element = $(element)
+            const href = $element.attr('href')
+
+            const name = $element.attr('title').trim()
+            const id = href.match(/^http:\/\/www\.xiami\.com\/search\/find.*/) !== null ? null : href.match(/\w+$/)[0]
+            artists.push({ id, name })
+          })
+
+          data.push({ id, canBePlayed, title, artists })
+        })
+
+        resolve({ total, lastPage, page, data })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
@@ -654,11 +719,12 @@ module.exports = {
   getAlbum,
   getSong,
   getSongHQAudioURL,
-  getTracklist,
   getSongOfCanBePlayed,
+  getTracklist,
   getArtistTracklist,
   getAlbumTracklist,
   getFeaturedCollectionTracklist,
+  getUserFavoriteSongs,
   convertArtistStringIdToNumberId,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,

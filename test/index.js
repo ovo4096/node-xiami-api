@@ -80,8 +80,14 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getSongHQAudioURL(1773270033).then((hQAudioURL) => {
-  console.log(hQAudioURL)
+// crawler.getSongHQAudioURL(1773270033).then((hQAudioURL) => {
+//   console.log(hQAudioURL)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getUserFavoriteSongs(12119063, 2).then((favoriteSongs) => {
+  console.log(favoriteSongs)
 }).catch((e) => {
   console.log(e)
 })
