@@ -74,8 +74,14 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getTracklist(crawler.TRACKLIST_TYPE_ARTIST, 80290).then((tracklist) => {
-  console.log(tracklist)
+// crawler.getTracklist(crawler.TRACKLIST_TYPE_ARTIST, 80290).then((tracklist) => {
+//   console.log(tracklist)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getSongHQAudioURL(1773270033).then((hQAudioURL) => {
+  console.log(hQAudioURL)
 }).catch((e) => {
   console.log(e)
 })

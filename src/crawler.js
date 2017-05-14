@@ -589,6 +589,44 @@ function getTracklist (type, id) {
   })
 }
 
+function getSongHQAudioURL (id) {
+  return new Promise((resolve, reject) => {
+    http.get({
+      hostname: 'www.xiami.com',
+      path: `/song/gethqsong/sid/${id}`,
+      headers: {
+        'Referer': 'http://www.xiami.com/'
+      }
+    }, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const parsedData = JSON.parse(rawData)
+        let audioURL = null
+        if (parsedData.status === 1 && parsedData.location !== '') {
+          audioURL = url.parse(_decodeLocation(parsedData.location))
+        }
+        resolve(audioURL)
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
@@ -599,6 +637,7 @@ module.exports = {
   getArtistTop100Songs,
   getAlbum,
   getSong,
+  getSongHQAudioURL,
   getTracklist,
   convertArtistStringIdToNumberId,
   searchArtists,
