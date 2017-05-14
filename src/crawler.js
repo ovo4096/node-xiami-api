@@ -91,8 +91,8 @@ function getFeaturedCollection (id) {
           const $input = $element.find('input[type="checkbox"]')
 
           const id = parseInt($input.attr('value'))
-          const canPlay = $input.is(':checked')
-          const title = canPlay
+          const canBePlayed = $input.is(':checked')
+          const title = canBePlayed
                           ? $element.find('.song_toclt').attr('title').trim().match(/^添加(.*)到歌单$/)[1]
                           : $element.find('.song_name').text().trim().match(/^.*(?=\s*--)/)[0].trim()
           const artists = []
@@ -108,7 +108,7 @@ function getFeaturedCollection (id) {
             artists.push({ name, id })
           })
 
-          tracklist.push({ id, title, artists, introduction, canPlay })
+          tracklist.push({ id, title, artists, introduction, canBePlayed })
         })
         resolve({
           id,
@@ -462,12 +462,12 @@ function getAlbum (id) {
           const $name = $element.find('.song_name')
 
           const id = parseInt($input.attr('value'))
-          const canPlay = $input.is(':checked')
+          const canBePlayed = $input.is(':checked')
           const title = $name.find('a:first-of-type').text().trim()
           let subtitle = $name.find('a:nth-of-type(2)').text().trim()
           subtitle = subtitle === '' ? null : subtitle
 
-          tracklist.push({ id, canPlay, title, subtitle })
+          tracklist.push({ id, canBePlayed, title, subtitle })
         })
 
         const artist = {
@@ -589,6 +589,22 @@ function getTracklist (type, id) {
   })
 }
 
+function getSongOfCanBePlayed (id) {
+  return getTracklist(TRACKLIST_TYPE_SONG, id)
+}
+
+function getArtistTracklist (id) {
+  return getTracklist(TRACKLIST_TYPE_ARTIST, id)
+}
+
+function getAlbumTracklist (id) {
+  return getTracklist(TRACKLIST_TYPE_ALBUM, id)
+}
+
+function getFeaturedCollectionTracklist (id) {
+  return getTracklist(TRACKLIST_TYPE_FEATURED_COLLECTION, id)
+}
+
 function getSongHQAudioURL (id) {
   return new Promise((resolve, reject) => {
     http.get({
@@ -639,6 +655,10 @@ module.exports = {
   getSong,
   getSongHQAudioURL,
   getTracklist,
+  getSongOfCanBePlayed,
+  getArtistTracklist,
+  getAlbumTracklist,
+  getFeaturedCollectionTracklist,
   convertArtistStringIdToNumberId,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
