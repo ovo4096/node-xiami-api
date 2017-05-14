@@ -1,11 +1,52 @@
 const http = require('http')
 const url = require('url')
 const cheerio = require('cheerio')
-const util = require('./util')
 
 const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
 const MAX_ARTIST_TOP100_PAGE_ITEMS = 20
+
+const TRACKLIST_TYPE_SONG = 0
+const TRACKLIST_TYPE_ALBUM = 1
+const TRACKLIST_TYPE_ARTIST = 2
+const TRACKLIST_TYPE_FEATURED_COLLECTION = 3
+
+function _editorTextFormatToString (text) {
+  return text.replace(/\t/g, '').replace(/\r/g, '')
+}
+
+function _decodeLocation (location) {
+  let loc2 = parseInt(location.substr(0, 1))
+  let loc3 = location.substr(1)
+  let loc4 = Math.floor(loc3.length / loc2)
+  let loc5 = loc3.length % loc2
+  let loc6 = []
+  let loc7 = 0
+  let loc8 = ''
+  let loc9 = ''
+  let loc10 = ''
+  while (loc7 < loc5) {
+    loc6[loc7] = loc3.substr((loc4 + 1) * loc7, loc4 + 1)
+    loc7++
+  }
+  loc7 = loc5
+  while (loc7 < loc2) {
+    loc6[loc7] = loc3.substr(loc4 * (loc7 - loc5) + (loc4 + 1) * loc5, loc4)
+    loc7++
+  }
+  loc7 = 0
+  while (loc7 < loc6[0].length) {
+    loc10 = 0
+    while (loc10 < loc6.length) {
+      loc8 += loc6[loc10][loc7] !== undefined ? loc6[loc10][loc7] : ''
+      loc10++
+    }
+    loc7++
+  }
+
+  loc9 = decodeURIComponent(loc8).replace(/\^/g, '0')
+  return loc9
+}
 
 function getFeaturedCollection (id) {
   return new Promise((resolve, reject) => {
@@ -39,7 +80,7 @@ function getFeaturedCollection (id) {
           name: $('h4 > a').text().trim(),
           avatarURL
         }
-        const introduction = util.editorTextFormatToString($('.info_intro_full').text().trim())
+        const introduction = _editorTextFormatToString($('.info_intro_full').text().trim())
         const id = parseInt($('#qrcode > span').text())
 
         let coverURL = $('.bigImgCover > img').attr('src').replace(/@.*$/, '')
@@ -55,7 +96,7 @@ function getFeaturedCollection (id) {
                           ? $element.find('.song_toclt').attr('title').trim().match(/^添加(.*)到歌单$/)[1]
                           : $element.find('.song_name').text().trim().match(/^.*(?=\s*--)/)[0].trim()
           const artists = []
-          let introduction = util.editorTextFormatToString($element.find('#des_').text().trim())
+          let introduction = _editorTextFormatToString($element.find('#des_').text().trim())
           introduction = introduction === '' ? null : introduction
 
           $element.find('.song_name > a[href^="/artist/"], .song_name > a[href^="http://www.xiami.com/search/find"]').each((_, element) => {
@@ -228,7 +269,7 @@ function getArtistProfile (id) {
         res.on('end', () => {
           const $ = cheerio.load(rawData)
           const $name = $('#artist_profile > .content > p > a')
-          const introduction = util.editorTextFormatToString($('#main > .profile').text())
+          const introduction = _editorTextFormatToString($('#main > .profile').text())
           const name = $name.clone().children().remove().end().text().trim()
           let aliases = $name.find('span').text().trim()
           aliases = aliases === '' ? [] : aliases.split(' / ')
@@ -435,7 +476,7 @@ function getAlbum (id) {
         }
 
         const coverURL = url.parse($('#cover_lightbox > img').attr('src').replace(/@.*$/, ''))
-        const introduction = util.editorTextFormatToString($('[property="v:summary"]').text().trim())
+        const introduction = _editorTextFormatToString($('[property="v:summary"]').text().trim())
 
         resolve({ id, title, subtitle, tracklist, artist, coverURL, introduction })
       })
@@ -494,6 +535,60 @@ function getSong (id) {
   })
 }
 
+function getTracklist (type, id) {
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/song/playlist/id/${id}/type/${type}/cat/json`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const parsedData = JSON.parse(rawData)
+        const tracklist = []
+
+        if (parsedData.data.trackList === undefined) {
+          resolve(tracklist)
+          return
+        }
+
+        for (const songData of parsedData.data.trackList) {
+          const artists = []
+          for (const artistData of songData.singersSource) {
+            artists.push({ id: artistData.artistId, name: artistData.artistName })
+          }
+
+          tracklist.push({
+            id: parseInt(songData.songId),
+            title: songData.songName,
+            subtitle: songData.subName === '' ? null : songData.subName,
+            album: {
+              id: songData.albumId,
+              coverURL: url.parse(songData.album_pic)
+            },
+            artists,
+            audioURL: url.parse(_decodeLocation(songData.location)),
+            lyricURL: songData.lyric_url === '' ? null : url.parse(songData.lyric_url)
+          })
+        }
+        resolve(tracklist)
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
@@ -504,9 +599,14 @@ module.exports = {
   getArtistTop100Songs,
   getAlbum,
   getSong,
+  getTracklist,
   convertArtistStringIdToNumberId,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
   MAX_ARTIST_ALBUMS_PAGE_ITEMS,
-  MAX_ARTIST_TOP100_PAGE_ITEMS
+  MAX_ARTIST_TOP100_PAGE_ITEMS,
+  TRACKLIST_TYPE_SONG,
+  TRACKLIST_TYPE_ALBUM,
+  TRACKLIST_TYPE_ARTIST,
+  TRACKLIST_TYPE_FEATURED_COLLECTION
 }

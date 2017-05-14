@@ -67,8 +67,15 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getSong('mQ6ed369641').then((song) => {
-  console.log(song)
+// crawler.getSong('mQ4D2c93887').then((song) => {
+//   console.log('low')
+//   console.log(song)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getTracklist(crawler.TRACKLIST_TYPE_ARTIST, 80290).then((tracklist) => {
+  console.log(tracklist)
 }).catch((e) => {
   console.log(e)
 })
