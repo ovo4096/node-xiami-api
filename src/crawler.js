@@ -6,6 +6,7 @@ const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
 const MAX_ARTIST_TOP100_PAGE_ITEMS = 20
 const MAX_USER_FAVORITE_SONGS_PAGE_ITEMS = 25
+const MAX_USER_FAVORITE_ALBUMS_PAGE_ITEMS = 15
 
 const TRACKLIST_TYPE_SONG = 0
 const TRACKLIST_TYPE_ALBUM = 1
@@ -708,6 +709,71 @@ function getUserFavoriteSongs (id, page = 1) {
   })
 }
 
+function getUserFavoriteAlbums (id, page = 1) {
+  if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/space/lib-album/u/${id}/page/${page}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const total = parseInt($('.counts').text().match(/\d+/)[0])
+        if (total === 0) {
+          resolve(null)
+          return
+        }
+
+        const data = []
+        const lastPage = Math.ceil(total / MAX_USER_FAVORITE_ALBUMS_PAGE_ITEMS)
+        if (page > lastPage) {
+          resolve(null)
+          return
+        }
+
+        $('.albumThread_list > ul > li').each((_, element) => {
+          const $element = $(element)
+          const $cover = $element.find('.CDcover100 > img')
+          const $artist = $element.find('.name a[href^="/artist/"]')
+
+          const id = parseInt($element.find('.album_item100_thread').attr('rel'))
+          const coverURL = url.parse($cover.attr('src').replace(/@.*$/, ''))
+          const title = $cover.attr('alt').trim()
+          const artist = {
+            id: $artist.attr('href').match(/\w+$/)[0],
+            name: $artist.attr('title').trim()
+          }
+
+          data.push({ id, title, coverURL, artist })
+        })
+
+        resolve({ total, lastPage, page, data })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
+function getUserFavoriteFeaturedCollection (id, page = 1) {
+}
+
+function getUserFavoriteArtists (id, page = 1) {
+
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
@@ -725,6 +791,9 @@ module.exports = {
   getAlbumTracklist,
   getFeaturedCollectionTracklist,
   getUserFavoriteSongs,
+  getUserFavoriteAlbums,
+  getUserFavoriteArtists,
+  getUserFavoriteFeaturedCollection,
   convertArtistStringIdToNumberId,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
