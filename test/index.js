@@ -88,14 +88,20 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-// crawler.getUserFavoriteSongs(15954481, 2).then((favoriteSongs) => {
+// crawler.getUserFavoriteSongs(4782340, 2).then((favoriteSongs) => {
 //   console.log(favoriteSongs)
 // }).catch((e) => {
 //   console.log(e)
 // })
 
-crawler.getUserFavoriteAlbums(15954481, 3).then((albums) => {
-  console.log(albums.data)
+// crawler.getUserFavoriteAlbums(4782340, 3).then((albums) => {
+//   console.log(albums.data)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getUserFavoriteFeaturedCollection(4782340).then((fc) => {
+  console.log(fc.data)
 }).catch((e) => {
   console.log(e)
 })

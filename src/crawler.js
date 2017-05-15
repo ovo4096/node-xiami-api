@@ -768,6 +768,63 @@ function getUserFavoriteAlbums (id, page = 1) {
 }
 
 function getUserFavoriteFeaturedCollection (id, page = 1) {
+  if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/space/collect-fav/u/${id}/page/${page}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const total = parseInt($('.counts').text().match(/\d+/)[0])
+        if (total === 0) {
+          resolve(null)
+          return
+        }
+
+        const data = []
+        const lastPage = Math.ceil(total / MAX_USER_FAVORITE_ALBUMS_PAGE_ITEMS)
+        if (page > lastPage) {
+          resolve(null)
+          return
+        }
+
+        $('.collectThread_list > ul > li').each((_, element) => {
+          const $element = $(element)
+          const $cover = $element.find('.cover img')
+          const $author = $element.find('.author > a')
+
+          let coverURL = $cover.attr('src').replace(/@.*$/, '')
+          coverURL = coverURL === 'http://pic.xiami.net/res/img/default/collect_default_cover.png' ? null : url.parse(coverURL)
+
+          const title = $cover.attr('alt').trim()
+          const id = parseInt($element.attr('id').match(/\d+/)[0])
+          const auther = {
+            id: parseInt($author.attr('href').match(/\d+/)[0]),
+            name: $author.text().trim()
+          }
+
+          data.push({ id, title, coverURL, auther })
+        })
+
+        resolve({ total, lastPage, page, data })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
 }
 
 function getUserFavoriteArtists (id, page = 1) {
