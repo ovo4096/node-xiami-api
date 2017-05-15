@@ -100,7 +100,13 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getUserFavoriteFeaturedCollection(4782340).then((fc) => {
+// crawler.getUserFavoriteFeaturedCollection(4782340).then((fc) => {
+//   console.log(fc.data)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getUserCreatedFeaturedCollection(4782340).then((fc) => {
   console.log(fc.data)
 }).catch((e) => {
   console.log(e)
