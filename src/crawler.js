@@ -7,6 +7,7 @@ const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
 const MAX_ARTIST_TOP100_PAGE_ITEMS = 20
 const MAX_USER_FAVORITE_SONGS_PAGE_ITEMS = 25
 const MAX_USER_FAVORITE_ALBUMS_PAGE_ITEMS = 15
+const MAX_USER_FAVORITE_ARTISTS_PAGE_ITEMS = 15
 
 const TRACKLIST_TYPE_SONG = 0
 const TRACKLIST_TYPE_ALBUM = 1
@@ -883,7 +884,67 @@ function getUserCreatedFeaturedCollection (id, page = 1) {
 }
 
 function getUserFavoriteArtists (id, page = 1) {
+  if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/space/lib-artist/u/${id}/page/${page}`, (res) => {
+      const { statusCode } = res
 
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const total = parseInt($('.counts').text().match(/\d+/)[0])
+        if (total === 0) {
+          resolve(null)
+          return
+        }
+
+        const data = []
+        const lastPage = Math.ceil(total / MAX_USER_FAVORITE_ARTISTS_PAGE_ITEMS)
+        if (page > lastPage) {
+          resolve(null)
+          return
+        }
+
+        $('.artistThread_list > ul > li').each((_, element) => {
+          const $element = $(element)
+          const $photo = $element.find('.artist100 > img')
+          const $name = $element.find('.name > a > strong')
+
+          let photoURL = $photo.attr('src').replace(/@.*$/, '')
+          photoURL = photoURL === 'http://pic.xiami.net/res/img/default/cd100.gif' ? null : url.parse(photoURL)
+
+          let id = $element.attr('id').match(/\d+/)
+          if (id === null) {
+            resolve(null)
+            return
+          }
+          id = parseInt(id[0])
+
+          const name = $name.clone().children().remove().end().text().trim()
+          let aliases = $name.find('span').text().trim().match(/^\((.*)\)$/)
+          aliases = aliases === null ? [] : aliases[1].split(' / ')
+
+          data.push({ id, name, aliases, photoURL })
+        })
+
+        resolve({ total, lastPage, page, data })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
 }
 
 module.exports = {

@@ -106,8 +106,14 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getUserCreatedFeaturedCollection(4782340).then((fc) => {
-  console.log(fc.data)
+// crawler.getUserCreatedFeaturedCollection(4782340).then((fc) => {
+//   console.log(fc.data)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getUserFavoriteArtists(4782340, 213).then((fa) => {
+  console.log(fa)
 }).catch((e) => {
   console.log(e)
 })
