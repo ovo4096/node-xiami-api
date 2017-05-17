@@ -1,6 +1,8 @@
 const http = require('http')
+const https = require('https')
 const url = require('url')
 const cheerio = require('cheerio')
+const FormData = require('form-data')
 
 const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
@@ -983,6 +985,68 @@ function getUserProfile (id) {
   })
 }
 
+function getUserToken (username, password) {
+  return new Promise((resolve, reject) => {
+    https.get(`https://login.xiami.com/member/login`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+      }
+
+      const xiamiToken = res.headers['set-cookie'][1].match(/_xiamitoken=(\w+);/)[1]
+      res.resume()
+
+      const form = new FormData()
+      form.append('_xiamitoken', xiamiToken)
+      form.append('account', username)
+      form.append('pw', password)
+
+      form.submit({
+        protocol: 'https:',
+        hostname: 'login.xiami.com',
+        path: '/passport/login',
+        method: 'POST',
+        headers: {
+          'Referer': 'https://login.xiami.com/member/login'
+        }
+      }, (err, res) => {
+        if (err) {
+          res.resume()
+          reject(err)
+          return
+        }
+        const { statusCode } = res
+
+        let error
+        if (statusCode !== 200) {
+          error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+        }
+        if (error) {
+          res.resume()
+          reject(error)
+          return
+        }
+
+        console.log(res)
+        res.setEncoding('utf8')
+        let rawData = ''
+        res.on('data', (chunk) => { rawData += chunk })
+        res.on('end', () => {
+          resolve(rawData)
+        })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollectionProfile,
   getArtistIdByName,
@@ -1005,6 +1069,7 @@ module.exports = {
   getUserFavoredFeaturedCollection,
   getUserCreatedFeaturedCollection,
   getUserProfile,
+  getUserToken,
   convertArtistStringIdToNumberId,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,

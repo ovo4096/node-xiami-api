@@ -118,8 +118,14 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getUserProfile(4782340).then((user) => {
-  console.log(user)
+// crawler.getUserProfile(4782340).then((user) => {
+//   console.log(user)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getUserToken('@', '').then((d) => {
+  console.log(d)
 }).catch((e) => {
   console.log(e)
 })

@@ -26,6 +26,7 @@
     "standard": "^10.0.2"
   },
   "dependencies": {
-    "cheerio": "^0.22.0"
+    "cheerio": "^0.22.0",
+    "form-data": "^2.1.4"
   }
 }
