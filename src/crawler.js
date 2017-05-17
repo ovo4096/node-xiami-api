@@ -947,6 +947,42 @@ function getUserFavoriteArtists (id, page = 1) {
   })
 }
 
+function getUserProfile (id) {
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/u/${id}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+        const name = $('h1').text().trim()
+
+        let avatarURL = $('#p_buddy > img').attr('src').replace(/@.*$/, '')
+        avatarURL = avatarURL.match(/\/\/pic\.xiami.net\/images\/default\/avatar/) !== null ? null : url.parse(avatarURL)
+
+        const playCounts = parseInt($('.play_count').text().replace('累计播放歌曲：', '').trim())
+        const introduction = _editorTextFormatToString($('.tweeting_full').text().trim())
+        const registeredDate = new Date($('.gray').text().replace('加入', '').trim())
+
+        resolve({ id, name, avatarURL, playCounts, introduction, registeredDate })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollection,
   getArtistIdByName,
@@ -968,11 +1004,15 @@ module.exports = {
   getUserFavoriteArtists,
   getUserFavoriteFeaturedCollection,
   getUserCreatedFeaturedCollection,
+  getUserProfile,
   convertArtistStringIdToNumberId,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
   MAX_ARTIST_ALBUMS_PAGE_ITEMS,
   MAX_ARTIST_TOP100_PAGE_ITEMS,
+  MAX_USER_FAVORITE_SONGS_PAGE_ITEMS,
+  MAX_USER_FAVORITE_ALBUMS_PAGE_ITEMS,
+  MAX_USER_FAVORITE_ARTISTS_PAGE_ITEMS,
   TRACKLIST_TYPE_SONG,
   TRACKLIST_TYPE_ALBUM,
   TRACKLIST_TYPE_ARTIST,
