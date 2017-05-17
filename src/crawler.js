@@ -5,9 +5,9 @@ const cheerio = require('cheerio')
 const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
 const MAX_ARTIST_TOP100_PAGE_ITEMS = 20
-const MAX_USER_FAVORITE_SONGS_PAGE_ITEMS = 25
-const MAX_USER_FAVORITE_ALBUMS_PAGE_ITEMS = 15
-const MAX_USER_FAVORITE_ARTISTS_PAGE_ITEMS = 15
+const MAX_USER_FAVORED_SONGS_PAGE_ITEMS = 25
+const MAX_USER_FAVORED_ALBUMS_PAGE_ITEMS = 15
+const MAX_USER_FAVORED_ARTISTS_PAGE_ITEMS = 15
 
 const TRACKLIST_TYPE_SONG = 0
 const TRACKLIST_TYPE_ALBUM = 1
@@ -51,7 +51,7 @@ function _decodeLocation (location) {
   return loc9
 }
 
-function getFeaturedCollection (id) {
+function getFeaturedCollectionProfile (id) {
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/collect/${id}`, (res) => {
       const { statusCode } = res
@@ -429,7 +429,7 @@ function convertArtistStringIdToNumberId (stringId) {
   })
 }
 
-function getAlbum (id) {
+function getAlbumProfile (id) {
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/album/${id}`, (res) => {
       const { statusCode } = res
@@ -489,7 +489,7 @@ function getAlbum (id) {
   })
 }
 
-function getSong (id) {
+function getSongProfile (id) {
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/song/${id}`, (res) => {
       const { statusCode } = res
@@ -592,7 +592,7 @@ function getTracklist (type, id) {
   })
 }
 
-function getSongOfCanBePlayed (id) {
+function getSong (id) {
   return getTracklist(TRACKLIST_TYPE_SONG, id)
 }
 
@@ -646,7 +646,7 @@ function getSongHQAudioURL (id) {
   })
 }
 
-function getUserFavoriteSongs (id, page = 1) {
+function getUserFavoredSongs (id, page = 1) {
   if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/space/lib-song/u/${id}/page/${page}`, (res) => {
@@ -674,7 +674,7 @@ function getUserFavoriteSongs (id, page = 1) {
         }
 
         const data = []
-        const lastPage = Math.ceil(total / MAX_USER_FAVORITE_SONGS_PAGE_ITEMS)
+        const lastPage = Math.ceil(total / MAX_USER_FAVORED_SONGS_PAGE_ITEMS)
         if (page > lastPage) {
           resolve(null)
           return
@@ -710,7 +710,7 @@ function getUserFavoriteSongs (id, page = 1) {
   })
 }
 
-function getUserFavoriteAlbums (id, page = 1) {
+function getUserFavoredAlbums (id, page = 1) {
   if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/space/lib-album/u/${id}/page/${page}`, (res) => {
@@ -738,7 +738,7 @@ function getUserFavoriteAlbums (id, page = 1) {
         }
 
         const data = []
-        const lastPage = Math.ceil(total / MAX_USER_FAVORITE_ALBUMS_PAGE_ITEMS)
+        const lastPage = Math.ceil(total / MAX_USER_FAVORED_ALBUMS_PAGE_ITEMS)
         if (page > lastPage) {
           resolve(null)
           return
@@ -768,7 +768,7 @@ function getUserFavoriteAlbums (id, page = 1) {
   })
 }
 
-function getUserFavoriteFeaturedCollection (id, page = 1) {
+function getUserFavoredFeaturedCollection (id, page = 1) {
   if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/space/collect-fav/u/${id}/page/${page}`, (res) => {
@@ -796,7 +796,7 @@ function getUserFavoriteFeaturedCollection (id, page = 1) {
         }
 
         const data = []
-        const lastPage = Math.ceil(total / MAX_USER_FAVORITE_ALBUMS_PAGE_ITEMS)
+        const lastPage = Math.ceil(total / MAX_USER_FAVORED_ALBUMS_PAGE_ITEMS)
         if (page > lastPage) {
           resolve(null)
           return
@@ -856,7 +856,7 @@ function getUserCreatedFeaturedCollection (id, page = 1) {
         }
 
         const data = []
-        const lastPage = Math.ceil(total / MAX_USER_FAVORITE_ALBUMS_PAGE_ITEMS)
+        const lastPage = Math.ceil(total / MAX_USER_FAVORED_ALBUMS_PAGE_ITEMS)
         if (page > lastPage) {
           resolve(null)
           return
@@ -883,7 +883,7 @@ function getUserCreatedFeaturedCollection (id, page = 1) {
   })
 }
 
-function getUserFavoriteArtists (id, page = 1) {
+function getUserFavoredArtists (id, page = 1) {
   if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/space/lib-artist/u/${id}/page/${page}`, (res) => {
@@ -911,7 +911,7 @@ function getUserFavoriteArtists (id, page = 1) {
         }
 
         const data = []
-        const lastPage = Math.ceil(total / MAX_USER_FAVORITE_ARTISTS_PAGE_ITEMS)
+        const lastPage = Math.ceil(total / MAX_USER_FAVORED_ARTISTS_PAGE_ITEMS)
         if (page > lastPage) {
           resolve(null)
           return
@@ -984,25 +984,25 @@ function getUserProfile (id) {
 }
 
 module.exports = {
-  getFeaturedCollection,
+  getFeaturedCollectionProfile,
   getArtistIdByName,
   getArtistIdBySearch,
   getArtistIdByNameOrSearch,
   getArtistProfile,
   getArtistAlbums,
   getArtistTop100Songs,
-  getAlbum,
-  getSong,
+  getAlbumProfile,
+  getSongProfile,
   getSongHQAudioURL,
-  getSongOfCanBePlayed,
+  getSong,
   getTracklist,
   getArtistTracklist,
   getAlbumTracklist,
   getFeaturedCollectionTracklist,
-  getUserFavoriteSongs,
-  getUserFavoriteAlbums,
-  getUserFavoriteArtists,
-  getUserFavoriteFeaturedCollection,
+  getUserFavoredSongs,
+  getUserFavoredAlbums,
+  getUserFavoredArtists,
+  getUserFavoredFeaturedCollection,
   getUserCreatedFeaturedCollection,
   getUserProfile,
   convertArtistStringIdToNumberId,
@@ -1010,9 +1010,9 @@ module.exports = {
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
   MAX_ARTIST_ALBUMS_PAGE_ITEMS,
   MAX_ARTIST_TOP100_PAGE_ITEMS,
-  MAX_USER_FAVORITE_SONGS_PAGE_ITEMS,
-  MAX_USER_FAVORITE_ALBUMS_PAGE_ITEMS,
-  MAX_USER_FAVORITE_ARTISTS_PAGE_ITEMS,
+  MAX_USER_FAVORED_SONGS_PAGE_ITEMS,
+  MAX_USER_FAVORED_ALBUMS_PAGE_ITEMS,
+  MAX_USER_FAVORED_ARTISTS_PAGE_ITEMS,
   TRACKLIST_TYPE_SONG,
   TRACKLIST_TYPE_ALBUM,
   TRACKLIST_TYPE_ARTIST,
