@@ -124,7 +124,7 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getUserToken('@', '').then((d) => {
+crawler.getUserToken('', '').then((d) => {
   console.log(d)
 }).catch((e) => {
   console.log(e)

@@ -2,7 +2,7 @@ const http = require('http')
 const https = require('https')
 const url = require('url')
 const cheerio = require('cheerio')
-const FormData = require('form-data')
+const querystring = require('querystring')
 
 const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
@@ -987,7 +987,7 @@ function getUserProfile (id) {
 
 function getUserToken (username, password) {
   return new Promise((resolve, reject) => {
-    https.get(`https://login.xiami.com/member/login`, (res) => {
+    https.get('https://login.xiami.com/member/login', (res) => {
       const { statusCode } = res
 
       let error
@@ -1000,27 +1000,30 @@ function getUserToken (username, password) {
       }
 
       const xiamiToken = res.headers['set-cookie'][1].match(/_xiamitoken=(\w+);/)[1]
+      // const cookies = res.headers['set-cookie']
       res.resume()
 
-      const form = new FormData()
-      form.append('_xiamitoken', xiamiToken)
-      form.append('account', username)
-      form.append('pw', password)
-
-      form.submit({
-        protocol: 'https:',
+      const postData = querystring.stringify({
+        '_xiamitoken': xiamiToken,
+        'account': username,
+        'pw': password
+      })
+      const options = {
         hostname: 'login.xiami.com',
         path: '/passport/login',
+        // hostname: 'localhost',
+        // port: 12345,
         method: 'POST',
         headers: {
-          'Referer': 'https://login.xiami.com/member/login'
+          'Referer': 'https://login.xiami.com/member/login',
+          // 'set-cookie': cookies,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'GuzzleHttp/6.2.1 curl/7.54.0 PHP/7.1.5',
+          'Connection': 'keep-alive'
         }
-      }, (err, res) => {
-        if (err) {
-          res.resume()
-          reject(err)
-          return
-        }
+      }
+
+      const req = https.request(options, (res) => {
         const { statusCode } = res
 
         let error
@@ -1030,10 +1033,8 @@ function getUserToken (username, password) {
         if (error) {
           res.resume()
           reject(error)
-          return
         }
 
-        console.log(res)
         res.setEncoding('utf8')
         let rawData = ''
         res.on('data', (chunk) => { rawData += chunk })
@@ -1041,6 +1042,12 @@ function getUserToken (username, password) {
           resolve(rawData)
         })
       })
+
+      req.on('error', (e) => {
+        reject(e)
+      })
+
+      req.end(postData)
     }).on('error', (e) => {
       reject(e)
     })
