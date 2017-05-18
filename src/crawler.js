@@ -1000,7 +1000,6 @@ function getUserToken (username, password) {
       }
 
       const xiamiToken = res.headers['set-cookie'][1].match(/_xiamitoken=(\w+);/)[1]
-      // const cookies = res.headers['set-cookie']
       res.resume()
 
       const postData = querystring.stringify({
@@ -1011,15 +1010,11 @@ function getUserToken (username, password) {
       const options = {
         hostname: 'login.xiami.com',
         path: '/passport/login',
-        // hostname: 'localhost',
-        // port: 12345,
         method: 'POST',
         headers: {
           'Referer': 'https://login.xiami.com/member/login',
-          // 'set-cookie': cookies,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'GuzzleHttp/6.2.1 curl/7.54.0 PHP/7.1.5',
-          'Connection': 'keep-alive'
+          'Cookie': `_xiamitoken=${xiamiToken}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
         }
       }
 
@@ -1039,14 +1034,14 @@ function getUserToken (username, password) {
         let rawData = ''
         res.on('data', (chunk) => { rawData += chunk })
         res.on('end', () => {
-          resolve(rawData)
+          const parsedData = JSON.parse(rawData)
+          resolve(parsedData)
         })
       })
 
       req.on('error', (e) => {
         reject(e)
       })
-
       req.end(postData)
     }).on('error', (e) => {
       reject(e)
