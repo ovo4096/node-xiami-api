@@ -15,6 +15,7 @@ const TRACKLIST_TYPE_SONG = 0
 const TRACKLIST_TYPE_ALBUM = 1
 const TRACKLIST_TYPE_ARTIST = 2
 const TRACKLIST_TYPE_FEATURED_COLLECTION = 3
+const TRACKLIST_TYPE_DAILY_RECOMMENDED = 9
 
 function _editorTextFormatToString (text) {
   return text.replace(/\t/g, '').replace(/\r/g, '')
@@ -540,9 +541,18 @@ function getSongProfile (id) {
   })
 }
 
-function getTracklist (type, id) {
+function getTracklist (type, id, userToken = null) {
   return new Promise((resolve, reject) => {
-    http.get(`http://www.xiami.com/song/playlist/id/${id}/type/${type}/cat/json`, (res) => {
+    const options = {
+      hostname: 'www.xiami.com',
+      path: `/song/playlist/id/${id}/type/${type}/cat/json`,
+      headers: {
+        'Referer': 'https://login.xiami.com/member/login',
+        'Cookie': userToken !== null ? `member_auth=${userToken}` : ''
+      }
+    }
+
+    http.get(options, (res) => {
       const { statusCode } = res
 
       let error
@@ -1054,6 +1064,14 @@ function getUserToken (username, password) {
   })
 }
 
+function getDailyRecommendedTracklist () {
+  return getTracklist(TRACKLIST_TYPE_DAILY_RECOMMENDED, 1)
+}
+
+function getUserDailyRecommendedTracklist (userToken) {
+  return getTracklist(TRACKLIST_TYPE_DAILY_RECOMMENDED, 1, userToken)
+}
+
 module.exports = {
   getFeaturedCollectionProfile,
   getArtistIdByName,
@@ -1070,6 +1088,8 @@ module.exports = {
   getArtistTracklist,
   getAlbumTracklist,
   getFeaturedCollectionTracklist,
+  getDailyRecommendedTracklist,
+  getUserDailyRecommendedTracklist,
   getUserFavoredSongs,
   getUserFavoredAlbums,
   getUserFavoredArtists,
@@ -1088,5 +1108,6 @@ module.exports = {
   TRACKLIST_TYPE_SONG,
   TRACKLIST_TYPE_ALBUM,
   TRACKLIST_TYPE_ARTIST,
-  TRACKLIST_TYPE_FEATURED_COLLECTION
+  TRACKLIST_TYPE_FEATURED_COLLECTION,
+  TRACKLIST_TYPE_DAILY_RECOMMENDED
 }

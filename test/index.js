@@ -124,8 +124,13 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getUserToken('', '').then((d) => {
-  console.log(d)
+crawler.getUserToken('', '').then((token) => {
+  console.log(token)
+  crawler.getUserDailyRecommendedTracklist(token).then((tracklist) => {
+    console.log(tracklist)
+  }).catch((e) => {
+    console.log(e)
+  })
 }).catch((e) => {
   console.log(e)
 })
