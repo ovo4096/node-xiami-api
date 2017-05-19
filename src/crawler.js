@@ -3,6 +3,7 @@ const https = require('https')
 const url = require('url')
 const cheerio = require('cheerio')
 const querystring = require('querystring')
+const xml2js = require('xml2js')
 
 const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
@@ -16,6 +17,9 @@ const TRACKLIST_TYPE_ALBUM = 1
 const TRACKLIST_TYPE_ARTIST = 2
 const TRACKLIST_TYPE_FEATURED_COLLECTION = 3
 const TRACKLIST_TYPE_DAILY_RECOMMENDED = 9
+
+const RADIO_TRACKLIST_TYPE_USER = 4
+const RADIO_TRACKLIST_TYPE_ARTIST = 5
 
 function _editorTextFormatToString (text) {
   return text.replace(/\t/g, '').replace(/\r/g, '')
@@ -477,11 +481,12 @@ function getAlbumProfile (id) {
         })
 
         const artist = {
-          id: parseInt($('#nav > .last').attr('href').match(/\d+$/)[0]),
+          id: parseInt($('#other_albums > .acts > a.more').attr('href').match(/\d+$/)[0]),
           name: $artist.text().trim()
         }
 
-        const coverURL = url.parse($('#cover_lightbox > img').attr('src').replace(/@.*$/, ''))
+        let coverURL = $('#cover_lightbox > img').attr('src').replace(/@.*$/, '')
+        coverURL = coverURL.match(/\/\/pic\.xiami.net\/images\/default\//) !== null ? null : url.parse(coverURL)
         const introduction = _editorTextFormatToString($('[property="v:summary"]').text().trim())
 
         resolve({ id, title, subtitle, tracklist, artist, coverURL, introduction })
@@ -547,7 +552,6 @@ function getTracklist (type, id, userToken = null) {
       hostname: 'www.xiami.com',
       path: `/song/playlist/id/${id}/type/${type}/cat/json`,
       headers: {
-        'Referer': 'https://login.xiami.com/member/login',
         'Cookie': userToken !== null ? `member_auth=${userToken}` : ''
       }
     }
@@ -572,7 +576,7 @@ function getTracklist (type, id, userToken = null) {
         const parsedData = JSON.parse(rawData)
         const tracklist = []
 
-        if (parsedData.data.trackList === undefined) {
+        if (parsedData.data.trackList === null || parsedData.data.trackList === undefined) {
           resolve(tracklist)
           return
         }
@@ -583,13 +587,17 @@ function getTracklist (type, id, userToken = null) {
             artists.push({ id: artistData.artistId, name: artistData.artistName })
           }
 
+          let albumCoverURL = songData.album_pic
+          albumCoverURL = albumCoverURL.match(/\/\/img\.xiami.net\/images\/default\//) !== null ? null : url.parse(albumCoverURL)
+
           tracklist.push({
             id: parseInt(songData.songId),
             title: songData.songName,
             subtitle: songData.subName === '' ? null : songData.subName,
             album: {
               id: songData.albumId,
-              coverURL: url.parse(songData.album_pic)
+              coverURL: albumCoverURL,
+              title: songData.album_name
             },
             artists,
             audioURL: url.parse(_decodeLocation(songData.location)),
@@ -605,7 +613,17 @@ function getTracklist (type, id, userToken = null) {
 }
 
 function getSong (id) {
-  return getTracklist(TRACKLIST_TYPE_SONG, id)
+  return new Promise((resolve, reject) => {
+    getTracklist(TRACKLIST_TYPE_SONG, id).then((tracklist) => {
+      for (const song of tracklist) {
+        resolve(song)
+        return
+      }
+      resolve(null)
+    }).catch((e) => {
+      reject(e)
+    })
+  })
 }
 
 function getArtistTracklist (id) {
@@ -1072,6 +1090,85 @@ function getUserDailyRecommendedTracklist (userToken) {
   return getTracklist(TRACKLIST_TYPE_DAILY_RECOMMENDED, 1, userToken)
 }
 
+function getRadioTracklist (type, id) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'www.xiami.com',
+      path: `/radio/xml/type/${type}/id/${id}`
+    }
+
+    http.get(options, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        xml2js.parseString(rawData, (err, parsedData) => {
+          if (err !== null) {
+            reject(err)
+            return
+          }
+
+          const tracklist = []
+          if (parsedData === null) {
+            resolve(tracklist)
+            return
+          }
+
+          for (const songData of parsedData.playList.trackList[0].track) {
+            const artists = []
+            for (const name of songData.artist[0].split(';')) {
+              artists.push({ id: songData.artist_id[0] === null ? null : parseInt(songData.artist_id[0]), name })
+              songData.artist_id[0] = null
+            }
+
+            let albumId = parseInt(songData.album_id[0])
+            albumId = albumId === 0 ? null : albumId
+
+            let albumCoverURL = songData.pic[0]
+            albumCoverURL = albumCoverURL.match(/\/\/img\.xiami.net\/images\/default\//) !== null ? null : url.parse(albumCoverURL)
+
+            tracklist.push({
+              id: parseInt(songData.song_id[0]),
+              title: songData.title[0],
+              album: {
+                id: albumId,
+                coverURL: albumCoverURL,
+                title: songData.album_name[0]
+              },
+              artists,
+              audioURL: url.parse(_decodeLocation(songData.location[0]))
+            })
+          }
+
+          resolve(tracklist)
+        })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
+function getUserRadioTracklist (id) {
+  return getRadioTracklist(RADIO_TRACKLIST_TYPE_USER, id)
+}
+
+function getArtistRadioTracklist (id) {
+  return getRadioTracklist(RADIO_TRACKLIST_TYPE_ARTIST, id)
+}
+
 module.exports = {
   getFeaturedCollectionProfile,
   getArtistIdByName,
@@ -1097,6 +1194,9 @@ module.exports = {
   getUserCreatedFeaturedCollection,
   getUserProfile,
   getUserToken,
+  getRadioTracklist,
+  getUserRadioTracklist,
+  getArtistRadioTracklist,
   convertArtistStringIdToNumberId,
   searchArtists,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
@@ -1109,5 +1209,7 @@ module.exports = {
   TRACKLIST_TYPE_ALBUM,
   TRACKLIST_TYPE_ARTIST,
   TRACKLIST_TYPE_FEATURED_COLLECTION,
-  TRACKLIST_TYPE_DAILY_RECOMMENDED
+  TRACKLIST_TYPE_DAILY_RECOMMENDED,
+  RADIO_TRACKLIST_TYPE_USER,
+  RADIO_TRACKLIST_TYPE_ARTIST
 }

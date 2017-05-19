@@ -124,13 +124,45 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getUserToken('', '').then((token) => {
-  console.log(token)
-  crawler.getUserDailyRecommendedTracklist(token).then((tracklist) => {
-    console.log(tracklist)
-  }).catch((e) => {
-    console.log(e)
-  })
+// crawler.getUserToken('', '').then((token) => {
+//   console.log(token)
+//   crawler.getUserDailyRecommendedTracklist(token).then((tracklist) => {
+//     console.log(tracklist)
+//   }).catch((e) => {
+//     console.log(e)
+//   })
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+// crawler.getRadioTracklist(crawler.RADIO_TRACKLIST_TYPE_ARTIST, 56351).then((tracklist) => {
+//   for (const song of tracklist) {
+//     console.log(song.album)
+//   }
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+// crawler.getAlbumTracklist(418377).then((tracklist) => {
+//   for (const song of tracklist) {
+//     console.log(song.album)
+//   }
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+// crawler.getSong(1769916564).then((song) => {
+//   console.log(song)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+// crawler.getAlbumProfile(1).then((album) => {
+//   console.log(album)
+// })
+
+crawler.getArtistRadioTracklist(86298).then((tracklist) => {
+  console.log(tracklist)
 }).catch((e) => {
   console.log(e)
 })
