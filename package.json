@@ -26,6 +26,7 @@
     "standard": "^10.0.2"
   },
   "dependencies": {
-    "cheerio": "^0.22.0"
+    "cheerio": "^0.22.0",
+    "cookie": "^0.3.1"
   }
 }

@@ -1035,7 +1035,12 @@ function getUserToken (username, password) {
         res.on('data', (chunk) => { rawData += chunk })
         res.on('end', () => {
           const parsedData = JSON.parse(rawData)
-          resolve(parsedData)
+          if (!parsedData.status) {
+            reject(new Error(parsedData.msg))
+            return
+          }
+
+          resolve(res.headers['set-cookie'][3].match(/member_auth=(\w+);/)[1])
         })
       })
 
