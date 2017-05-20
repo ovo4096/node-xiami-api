@@ -167,9 +167,10 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.searchSongs('ふわふわ時間').then((pageResults) => {
-  for (const song of pageResults.data) {
-    console.log(song)
+crawler.searchAlbums('十周年歌曲集').then((pageResults) => {
+  console.log(pageResults)
+  for (const album of pageResults.data) {
+    console.log(album)
   }
 }).catch((e) => {
   console.log(e)

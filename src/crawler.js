@@ -7,6 +7,8 @@ const xml2js = require('xml2js')
 
 const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 const MAX_SEARCH_SONGS_PAGE_ITEMS = 20
+const MAX_SEARCH_ALBUMS_PAGE_ITEMS = 30
+
 const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
 const MAX_ARTIST_TOP100_PAGE_ITEMS = 20
 const MAX_USER_FAVORED_SONGS_PAGE_ITEMS = 25
@@ -1244,6 +1246,72 @@ function searchSongs (keyword, page = 1) {
   })
 }
 
+function searchAlbums (keyword, page = 1) {
+  if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/search/album/page/${page}?key=${encodeURIComponent(keyword)}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+
+        const total = parseInt($('.seek_counts.ok > b:first-child').text().trim())
+        if (total === 0) {
+          resolve(null)
+          return
+        }
+
+        const data = []
+        const lastPage = Math.ceil(total / MAX_SEARCH_ALBUMS_PAGE_ITEMS)
+        if (page > lastPage) {
+          resolve(null)
+          return
+        }
+
+        $('.albumBlock_list > ul > li').each((_, element) => {
+          const $element = $(element)
+          const $name = $element.find('.name > a[href^="http://www.xiami.com/album/"]')
+          const $artist = $element.find('.singer')
+
+          const id = $name.attr('href').match(/\w+$/)[0]
+          const title = $name.attr('title')
+
+          let subtitle = $name.find('.album_name').text().trim()
+          subtitle = subtitle === '' ? null : subtitle.match(/^\((.*)\)$/)[1]
+
+          let artist = {
+            id: $artist.attr('href').match(/\w+$/)[0],
+            name: $artist.attr('title').trim()
+          }
+          artist = artist.name === '' ? null : artist
+
+          let coverURL = $element.find('.cover img').attr('src').replace(/@.*$/, '')
+          coverURL = coverURL.match(/\/\/pic\.xiami.net\/images\/default\//) !== null ? null : url.parse(coverURL)
+
+          data.push({ id, title, subtitle, artist, coverURL })
+        })
+
+        resolve({ total, lastPage, page, data })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollectionProfile,
   getArtistIdByName,
@@ -1275,8 +1343,10 @@ module.exports = {
   convertArtistStringIdToNumberId,
   searchArtists,
   searchSongs,
+  searchAlbums,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
   MAX_SEARCH_SONGS_PAGE_ITEMS,
+  MAX_SEARCH_ALBUMS_PAGE_ITEMS,
   MAX_ARTIST_ALBUMS_PAGE_ITEMS,
   MAX_ARTIST_TOP100_PAGE_ITEMS,
   MAX_USER_FAVORED_SONGS_PAGE_ITEMS,
