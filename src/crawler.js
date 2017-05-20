@@ -8,6 +8,7 @@ const xml2js = require('xml2js')
 const MAX_SEARCH_ARTISTS_PAGE_ITEMS = 30
 const MAX_SEARCH_SONGS_PAGE_ITEMS = 20
 const MAX_SEARCH_ALBUMS_PAGE_ITEMS = 30
+const MAX_SEARCH_FEATURED_COLLECTIONS_PAGE_ITEMS = 30
 
 const MAX_ARTIST_ALBUMS_PAGE_ITEMS = 12
 const MAX_ARTIST_TOP100_PAGE_ITEMS = 20
@@ -88,7 +89,7 @@ function getFeaturedCollectionProfile (id) {
         let avatarURL = $('.collect_cover > img').attr('src').replace(/@.*$/, '')
         avatarURL = avatarURL.match(/\/\/pic\.xiami.net\/images\/default\/avatar/) !== null ? null : url.parse(avatarURL)
 
-        const auther = {
+        const author = {
           id: parseInt($('h4 > a').attr('name_card')),
           name: $('h4 > a').text().trim(),
           avatarURL
@@ -126,7 +127,7 @@ function getFeaturedCollectionProfile (id) {
         resolve({
           id,
           title,
-          auther,
+          author,
           introduction,
           tracklist,
           coverURL
@@ -845,12 +846,12 @@ function getUserFavoredFeaturedCollection (id, page = 1) {
 
           const title = $cover.attr('alt').trim()
           const id = parseInt($element.attr('id').match(/\d+/)[0])
-          const auther = {
+          const author = {
             id: parseInt($author.attr('href').match(/\d+/)[0]),
             name: $author.text().trim()
           }
 
-          data.push({ id, title, coverURL, auther })
+          data.push({ id, title, coverURL, author })
         })
 
         resolve({ total, lastPage, page, data })
@@ -1312,6 +1313,68 @@ function searchAlbums (keyword, page = 1) {
   })
 }
 
+function searchFeaturedCollections (keyword, page = 1) {
+  if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
+  return new Promise((resolve, reject) => {
+    http.get(`http://www.xiami.com/search/collect/page/${page}?key=${encodeURIComponent(keyword)}`, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const $ = cheerio.load(rawData)
+
+        const total = parseInt($('.cs_t > i').text().trim())
+        if (total === 0) {
+          resolve(null)
+          return
+        }
+
+        const data = []
+        const lastPage = Math.ceil(total / MAX_SEARCH_FEATURED_COLLECTIONS_PAGE_ITEMS)
+        if (page > lastPage) {
+          resolve(null)
+          return
+        }
+
+        $('.block_list > ul > li').each((_, element) => {
+          const $element = $(element)
+          const $title = $element.find('h3 > a')
+          const $author = $element.find('.collect_info a[href^="http://www.xiami.com/u/"]')
+
+          const id = parseInt($title.attr('href').match(/\d+$/)[0])
+          const title = $title.attr('title')
+
+          const author = {
+            id: parseInt($author.attr('href').match(/\d+$/)[0]),
+            name: $author.attr('title').trim()
+          }
+
+          let coverURL = $('.block_cover img').attr('src').replace(/@.*$/, '')
+          coverURL = coverURL === 'http://pic.xiami.net/res/img/default/collect_default_cover.png' ? null : url.parse(coverURL)
+
+          data.push({ id, title, author, coverURL })
+        })
+
+        resolve({ total, lastPage, page, data })
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollectionProfile,
   getArtistIdByName,
@@ -1344,9 +1407,11 @@ module.exports = {
   searchArtists,
   searchSongs,
   searchAlbums,
+  searchFeaturedCollections,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
   MAX_SEARCH_SONGS_PAGE_ITEMS,
   MAX_SEARCH_ALBUMS_PAGE_ITEMS,
+  MAX_SEARCH_FEATURED_COLLECTIONS_PAGE_ITEMS,
   MAX_ARTIST_ALBUMS_PAGE_ITEMS,
   MAX_ARTIST_TOP100_PAGE_ITEMS,
   MAX_USER_FAVORED_SONGS_PAGE_ITEMS,

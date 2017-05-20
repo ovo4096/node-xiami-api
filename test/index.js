@@ -167,10 +167,10 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.searchAlbums('十周年歌曲集').then((pageResults) => {
+crawler.searchFeaturedCollections('测试').then((pageResults) => {
   console.log(pageResults)
-  for (const album of pageResults.data) {
-    console.log(album)
+  for (const featuredCollection of pageResults.data) {
+    console.log(featuredCollection)
   }
 }).catch((e) => {
   console.log(e)
