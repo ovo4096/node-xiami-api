@@ -161,8 +161,16 @@ const crawler = require('../src/crawler')
 //   console.log(album)
 // })
 
-crawler.getArtistRadioTracklist(86298).then((tracklist) => {
-  console.log(tracklist)
+// crawler.getArtistRadioTracklist(86298).then((tracklist) => {
+//   console.log(tracklist)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.searchSongs('ふわふわ時間').then((pageResults) => {
+  for (const song of pageResults.data) {
+    console.log(song)
+  }
 }).catch((e) => {
   console.log(e)
 })
