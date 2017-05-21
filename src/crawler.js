@@ -1375,6 +1375,42 @@ function searchFeaturedCollections (keyword, page = 1) {
   })
 }
 
+function addFavorite (id, userToken) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'www.xiami.com',
+      path: `/song/favjson?ids=${id}&_xiamitoken=&_ksTS=`,
+      headers: {
+        'Cookie': userToken !== null ? `member_auth=${userToken}` : ''
+      }
+    }
+
+    http.get(options, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const parsedData = JSON.parse(rawData)
+        resolve(parsedData)
+      })
+    }).on('error', (e) => {
+      reject(e)
+    })
+  })
+}
+
 module.exports = {
   getFeaturedCollectionProfile,
   getArtistIdByName,
@@ -1408,6 +1444,7 @@ module.exports = {
   searchSongs,
   searchAlbums,
   searchFeaturedCollections,
+  addFavorite,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
   MAX_SEARCH_SONGS_PAGE_ITEMS,
   MAX_SEARCH_ALBUMS_PAGE_ITEMS,

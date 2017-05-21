@@ -167,11 +167,17 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.searchFeaturedCollections('测试').then((pageResults) => {
-  console.log(pageResults)
-  for (const featuredCollection of pageResults.data) {
-    console.log(featuredCollection)
-  }
+// crawler.searchFeaturedCollections('测试').then((pageResults) => {
+//   console.log(pageResults)
+//   for (const featuredCollection of pageResults.data) {
+//     console.log(featuredCollection)
+//   }
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.addFavorite(1771349505, '').then((json) => {
+  console.log(json)
 }).catch((e) => {
   console.log(e)
 })
