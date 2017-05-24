@@ -176,8 +176,14 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.addFavorite(1771349505, '').then((json) => {
-  console.log(json)
+// crawler.addFavorite(2088147, '').then((json) => {
+//   console.log(json)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getSongHQAudioURL(1795555753).then((url) => {
+  console.log(url)
 }).catch((e) => {
   console.log(e)
 })

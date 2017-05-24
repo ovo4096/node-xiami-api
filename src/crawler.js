@@ -1379,9 +1379,10 @@ function addFavorite (id, userToken) {
   return new Promise((resolve, reject) => {
     const options = {
       hostname: 'www.xiami.com',
-      path: `/song/favjson?ids=${id}&_xiamitoken=&_ksTS=`,
+      path: `/song/favjson?ids=${id}&_xiamitoken=1`,
       headers: {
-        'Cookie': userToken !== null ? `member_auth=${userToken}` : ''
+        'Cookie': `member_auth=${userToken}; _xiamitoken=1`,
+        'Referer': 'http://www.xiami.com/'
       }
     }
 
