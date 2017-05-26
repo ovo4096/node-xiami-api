@@ -182,8 +182,20 @@ const crawler = require('../src/crawler')
 //   console.log(e)
 // })
 
-crawler.getSongHQAudioURL(1795555753).then((url) => {
-  console.log(url)
+// crawler.getSongHQAudioURL(1795555753).then((url) => {
+//   console.log(url)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.addFavorite(39319022, crawler.FAVORITE_TYPE_FEATURED_COLLECTION, '').then((status) => {
+  console.log(status)
+}).catch((e) => {
+  console.log(e)
+})
+
+crawler.deleteFavorite(39319022, crawler.FAVORITE_TYPE_FEATURED_COLLECTION, '').then((status) => {
+  console.log(status)
 }).catch((e) => {
   console.log(e)
 })

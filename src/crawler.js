@@ -25,6 +25,11 @@ const TRACKLIST_TYPE_DAILY_RECOMMENDED = 9
 const RADIO_TRACKLIST_TYPE_USER = 4
 const RADIO_TRACKLIST_TYPE_ARTIST = 5
 
+const FAVORITE_TYPE_SONG = 3
+const FAVORITE_TYPE_ALBUM = 5
+const FAVORITE_TYPE_FEATURED_COLLECTION = 4
+const FAVORITE_TYPE_ARTIST = 6
+
 function _editorTextFormatToString (text) {
   return text.replace(/\t/g, '').replace(/\r/g, '')
 }
@@ -1375,11 +1380,159 @@ function searchFeaturedCollections (keyword, page = 1) {
   })
 }
 
-function addFavorite (id, userToken) {
+// function addFavorite (id, userToken) {
+//   return new Promise((resolve, reject) => {
+//     const options = {
+//       hostname: 'www.xiami.com',
+//       path: `/song/favjson?ids=${id}&_xiamitoken=1`,
+//       headers: {
+//         'Cookie': `member_auth=${userToken}; _xiamitoken=1`,
+//         'Referer': 'http://www.xiami.com/'
+//       }
+//     }
+
+//     http.get(options, (res) => {
+//       const { statusCode } = res
+
+//       let error
+//       if (statusCode !== 200) {
+//         error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+//       }
+//       if (error) {
+//         res.resume()
+//         reject(error)
+//         return
+//       }
+
+//       res.setEncoding('utf8')
+//       let rawData = ''
+//       res.on('data', (chunk) => { rawData += chunk })
+//       res.on('end', () => {
+//         const parsedData = JSON.parse(rawData)
+//         resolve(parsedData)
+//       })
+//     }).on('error', (e) => {
+//       reject(e)
+//     })
+//   })
+// }
+
+// function addFavoriteN (id, userToken) {
+//   return new Promise((resolve, reject) => {
+//     const options = {
+//       hostname: 'www.xiami.com',
+//       path: `/ajax/space-lib-del?song_id=${id}&_xiamitoken=1`,
+//       headers: {
+//         'Cookie': `member_auth=${userToken}; _xiamitoken=1`,
+//         'Referer': 'http://www.xiami.com/'
+//       }
+//     }
+
+//     http.get(options, (res) => {
+//       const { statusCode } = res
+
+//       let error
+//       if (statusCode !== 200) {
+//         error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+//       }
+//       if (error) {
+//         res.resume()
+//         reject(error)
+//         return
+//       }
+
+//       res.setEncoding('utf8')
+//       let rawData = ''
+//       res.on('data', (chunk) => { rawData += chunk })
+//       res.on('end', () => {
+//         const parsedData = JSON.parse(rawData)
+//         resolve(parsedData)
+//       })
+//     }).on('error', (e) => {
+//       reject(e)
+//     })
+//   })
+// }
+
+function addFavorite (id, type, userToken) {
   return new Promise((resolve, reject) => {
+    const postData = querystring.stringify({
+      type,
+      id,
+      '_xiamitoken': 1
+    })
+
+    const options = {
+      method: 'POST',
+      hostname: 'www.xiami.com',
+      path: '/ajax/addtag',
+      headers: {
+        'Cookie': `member_auth=${userToken}; _xiamitoken=1`,
+        'Referer': 'http://www.xiami.com/',
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    }
+
+    const req = http.request(options, (res) => {
+      const { statusCode } = res
+
+      let error
+      if (statusCode !== 200) {
+        error = new Error(`Request Failed.\nStatus Code: ${statusCode}`)
+      }
+      if (error) {
+        res.resume()
+        reject(error)
+        return
+      }
+
+      res.setEncoding('utf8')
+      let rawData = ''
+      res.on('data', (chunk) => { rawData += chunk })
+      res.on('end', () => {
+        const parsedData = JSON.parse(rawData)
+        console.log(parsedData)
+
+        if (parsedData.status !== 'ok' && parsedData.msg !== '以前收藏过了') {
+          resolve(false)
+          return
+        }
+        resolve(true)
+      })
+    })
+
+    req.on('error', (e) => {
+      reject(e)
+    })
+
+    req.end(postData)
+  })
+}
+
+function deleteFavorite (id, type, userToken) {
+  return new Promise((resolve, reject) => {
+    let queryType = null
+    switch (type) {
+      case FAVORITE_TYPE_ALBUM:
+        queryType = 'album_id'
+        break
+      case FAVORITE_TYPE_ARTIST:
+        queryType = 'artist_id'
+        break
+      case FAVORITE_TYPE_FEATURED_COLLECTION:
+        queryType = 'list_id'
+        break
+      case FAVORITE_TYPE_SONG:
+        queryType = 'song_id'
+        break
+      default:
+        reject(new Error('Unknown favorite `type`'))
+        return
+    }
+
     const options = {
       hostname: 'www.xiami.com',
-      path: `/song/favjson?ids=${id}&_xiamitoken=1`,
+      path: `/ajax/${type === FAVORITE_TYPE_FEATURED_COLLECTION ? 'collect-fav-del' : 'space-lib-del'}?${queryType}=${id}&_xiamitoken=1`,
       headers: {
         'Cookie': `member_auth=${userToken}; _xiamitoken=1`,
         'Referer': 'http://www.xiami.com/'
@@ -1404,12 +1557,48 @@ function addFavorite (id, userToken) {
       res.on('data', (chunk) => { rawData += chunk })
       res.on('end', () => {
         const parsedData = JSON.parse(rawData)
-        resolve(parsedData)
+        if (parsedData.code !== 1) {
+          resolve(false)
+          return
+        }
+        resolve(true)
       })
     }).on('error', (e) => {
       reject(e)
     })
   })
+}
+
+function addAlbumToFavorite (id, userToken) {
+  return addFavorite(id, FAVORITE_TYPE_ALBUM, userToken)
+}
+
+function deleteAlbumFromFavorite (id, userToken) {
+  return deleteFavorite(id, FAVORITE_TYPE_ALBUM, userToken)
+}
+
+function addSongToFavorite (id, userToken) {
+  return addFavorite(id, FAVORITE_TYPE_SONG, userToken)
+}
+
+function deleteSongFromFavorite (id, userToken) {
+  return deleteFavorite(id, FAVORITE_TYPE_SONG, userToken)
+}
+
+function addArtistToFavorite (id, userToken) {
+  return addFavorite(id, FAVORITE_TYPE_ARTIST, userToken)
+}
+
+function deleteArtistFromFavorite (id, userToken) {
+  return deleteFavorite(id, FAVORITE_TYPE_ARTIST, userToken)
+}
+
+function addFeaturedCollectionToFavorite (id, userToken) {
+  return addFavorite(id, FAVORITE_TYPE_FEATURED_COLLECTION, userToken)
+}
+
+function deleteFeaturedCollectionFromFavorite (id, userToken) {
+  return deleteFavorite(id, FAVORITE_TYPE_FEATURED_COLLECTION, userToken)
 }
 
 module.exports = {
@@ -1446,6 +1635,19 @@ module.exports = {
   searchAlbums,
   searchFeaturedCollections,
   addFavorite,
+  deleteFavorite,
+  addAlbumToFavorite,
+  deleteAlbumFromFavorite,
+  addSongToFavorite,
+  deleteSongFromFavorite,
+  addArtistToFavorite,
+  deleteArtistFromFavorite,
+  addFeaturedCollectionToFavorite,
+  deleteFeaturedCollectionFromFavorite,
+  FAVORITE_TYPE_SONG,
+  FAVORITE_TYPE_ALBUM,
+  FAVORITE_TYPE_FEATURED_COLLECTION,
+  FAVORITE_TYPE_ARTIST,
   MAX_SEARCH_ARTISTS_PAGE_ITEMS,
   MAX_SEARCH_SONGS_PAGE_ITEMS,
   MAX_SEARCH_ALBUMS_PAGE_ITEMS,
