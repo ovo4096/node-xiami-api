@@ -1,4 +1,4 @@
-const crawler = require('../src/crawler')
+const { crawler } = require('../')
 
 // crawler.getFeaturedCollection(154166515).then((collection) => {
 //   for (const song of collection.tracklist) {

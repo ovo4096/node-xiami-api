@@ -1417,13 +1417,11 @@ function addFavorite (id, type, userToken) {
       res.on('data', (chunk) => { rawData += chunk })
       res.on('end', () => {
         const parsedData = JSON.parse(rawData)
-        console.log(parsedData)
-
         if (parsedData.status !== 'ok' && parsedData.msg !== '以前收藏过了') {
-          resolve(false)
+          reject(new Error(`Add favorite failed (reason: ${parsedData.msg})`))
           return
         }
-        resolve(true)
+        resolve()
       })
     })
 
@@ -1484,10 +1482,10 @@ function deleteFavorite (id, type, userToken) {
       res.on('end', () => {
         const parsedData = JSON.parse(rawData)
         if (parsedData.code !== 1) {
-          resolve(false)
+          reject(new Error('Delete favorite failed'))
           return
         }
-        resolve(true)
+        resolve()
       })
     }).on('error', (e) => {
       reject(e)
