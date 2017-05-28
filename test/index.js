@@ -188,14 +188,32 @@ const { crawler } = require('../')
 //   console.log(e)
 // })
 
-crawler.addFavorite(39319022, crawler.FAVORITE_TYPE_FEATURED_COLLECTION, '').then((status) => {
-  console.log(status)
-}).catch((e) => {
-  console.log(e)
-})
+// crawler.addFavorite(39319022, crawler.FAVORITE_TYPE_FEATURED_COLLECTION, '').then((status) => {
+//   console.log(status)
+// }).catch((e) => {
+//   console.log(e)
+// })
 
-crawler.deleteFavorite(39319022, crawler.FAVORITE_TYPE_FEATURED_COLLECTION, '').then((status) => {
-  console.log(status)
+// crawler.deleteFavorite(39319022, crawler.FAVORITE_TYPE_FEATURED_COLLECTION, '').then((status) => {
+//   console.log(status)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+// crawler.getFeaturedCollectionProfile(39319022, '').then((profile) => {
+//   console.log(profile)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+// crawler.getAlbumProfile(1819957020, '').then((profile) => {
+//   console.log(profile)
+// }).catch((e) => {
+//   console.log(e)
+// })
+
+crawler.getSongProfile(1795555753, '').then((profile) => {
+  console.log(profile)
 }).catch((e) => {
   console.log(e)
 })

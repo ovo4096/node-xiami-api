@@ -67,9 +67,17 @@ function _decodeLocation (location) {
   return loc9
 }
 
-function getFeaturedCollectionProfile (id) {
+function getFeaturedCollectionProfile (id, userToken = null) {
   return new Promise((resolve, reject) => {
-    http.get(`http://www.xiami.com/collect/${id}`, (res) => {
+    const options = {
+      hostname: 'www.xiami.com',
+      path: `/collect/${id}`,
+      headers: {
+        'Cookie': userToken !== null ? `member_auth=${userToken}` : ''
+      }
+    }
+
+    http.get(options, (res) => {
       const { statusCode } = res
 
       let error
@@ -129,13 +137,15 @@ function getFeaturedCollectionProfile (id) {
 
           tracklist.push({ id, title, artists, introduction, canBePlayed })
         })
+
         resolve({
           id,
           title,
           author,
           introduction,
           tracklist,
-          coverURL
+          coverURL,
+          isFavorite: $('#collect_removefav_').css('display') !== 'none'
         })
       })
     }).on('error', (e) => {
@@ -445,9 +455,17 @@ function convertArtistStringIdToNumberId (stringId) {
   })
 }
 
-function getAlbumProfile (id) {
+function getAlbumProfile (id, userToken = null) {
   return new Promise((resolve, reject) => {
-    http.get(`http://www.xiami.com/album/${id}`, (res) => {
+    const options = {
+      hostname: 'www.xiami.com',
+      path: `/album/${id}`,
+      headers: {
+        'Cookie': userToken !== null ? `member_auth=${userToken}` : ''
+      }
+    }
+
+    http.get(options, (res) => {
       const { statusCode } = res
 
       let error
@@ -498,7 +516,9 @@ function getAlbumProfile (id) {
         coverURL = coverURL.match(/\/\/pic\.xiami.net\/images\/default\//) !== null ? null : url.parse(coverURL)
         const introduction = _editorTextFormatToString($('[property="v:summary"]').text().trim())
 
-        resolve({ id, title, subtitle, tracklist, artist, coverURL, introduction })
+        const isFavorite = $(`#album_removefav_${id}`).css('display') !== 'none'
+
+        resolve({ id, title, subtitle, tracklist, artist, coverURL, introduction, isFavorite })
       })
     }).on('error', (e) => {
       reject(e)
@@ -506,9 +526,17 @@ function getAlbumProfile (id) {
   })
 }
 
-function getSongProfile (id) {
+function getSongProfile (id, userToken = null) {
   return new Promise((resolve, reject) => {
-    http.get(`http://www.xiami.com/song/${id}`, (res) => {
+    const options = {
+      hostname: 'www.xiami.com',
+      path: `/song/${id}`,
+      headers: {
+        'Cookie': userToken !== null ? `member_auth=${userToken}` : ''
+      }
+    }
+
+    http.get(options, (res) => {
       const { statusCode } = res
 
       let error
@@ -547,7 +575,9 @@ function getSongProfile (id) {
           artists.push({ id, name })
         })
 
-        resolve({ id, title, subtitle, album, artists })
+        const isFavorite = $(`#song_removefav_${id}`).css('display') !== 'none'
+
+        resolve({ id, title, subtitle, album, artists, isFavorite })
       })
     }).on('error', (e) => {
       reject(e)
@@ -610,7 +640,8 @@ function getTracklist (type, id, userToken = null) {
             },
             artists,
             audioURL: url.parse(_decodeLocation(songData.location)),
-            lyricURL: songData.lyric_url === '' ? null : url.parse(songData.lyric_url)
+            lyricURL: songData.lyric_url === '' ? null : url.parse(songData.lyric_url),
+            isFavorite: songData.grade === 1
           })
         }
         resolve(tracklist)
@@ -621,30 +652,26 @@ function getTracklist (type, id, userToken = null) {
   })
 }
 
-function getSong (id) {
+function getSongsTracklist (ids, userToken = null) {
   return new Promise((resolve, reject) => {
-    getTracklist(TRACKLIST_TYPE_SONG, id).then((tracklist) => {
-      for (const song of tracklist) {
-        resolve(song)
-        return
-      }
-      resolve(null)
+    getTracklist(TRACKLIST_TYPE_SONG, encodeURIComponent(ids.join()), userToken).then((tracklist) => {
+      resolve(tracklist)
     }).catch((e) => {
       reject(e)
     })
   })
 }
 
-function getArtistTracklist (id) {
-  return getTracklist(TRACKLIST_TYPE_ARTIST, id)
+function getArtistTracklist (id, userToken = null) {
+  return getTracklist(TRACKLIST_TYPE_ARTIST, id, userToken)
 }
 
-function getAlbumTracklist (id) {
-  return getTracklist(TRACKLIST_TYPE_ALBUM, id)
+function getAlbumTracklist (id, userToken = null) {
+  return getTracklist(TRACKLIST_TYPE_ALBUM, id, userToken)
 }
 
-function getFeaturedCollectionTracklist (id) {
-  return getTracklist(TRACKLIST_TYPE_FEATURED_COLLECTION, id)
+function getFeaturedCollectionTracklist (id, userToken = null) {
+  return getTracklist(TRACKLIST_TYPE_FEATURED_COLLECTION, id, userToken)
 }
 
 function getSongHQAudioURL (id) {
@@ -1536,8 +1563,8 @@ module.exports = {
   getAlbumProfile,
   getSongProfile,
   getSongHQAudioURL,
-  getSong,
   getTracklist,
+  getSongsTracklist,
   getArtistTracklist,
   getAlbumTracklist,
   getFeaturedCollectionTracklist,
