@@ -67,7 +67,7 @@ function _decodeLocation (location) {
   return loc9
 }
 
-function getFeaturedCollectionProfile (id, userToken = null) {
+function getFeaturedCollectionContent (id, userToken = null) {
   return new Promise((resolve, reject) => {
     const options = {
       hostname: 'www.xiami.com',
@@ -455,7 +455,7 @@ function convertArtistStringIdToNumberId (stringId) {
   })
 }
 
-function getAlbumProfile (id, userToken = null) {
+function getAlbumContent (id, userToken = null) {
   return new Promise((resolve, reject) => {
     const options = {
       hostname: 'www.xiami.com',
@@ -526,7 +526,7 @@ function getAlbumProfile (id, userToken = null) {
   })
 }
 
-function getSongProfile (id, userToken = null) {
+function getSongContent (id, userToken = null) {
   return new Promise((resolve, reject) => {
     const options = {
       hostname: 'www.xiami.com',
@@ -834,7 +834,7 @@ function getUserFavoredAlbums (id, page = 1) {
   })
 }
 
-function getUserFavoredFeaturedCollection (id, page = 1) {
+function getUserFavoredFeaturedCollections (id, page = 1) {
   if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/space/collect-fav/u/${id}/page/${page}`, (res) => {
@@ -894,7 +894,7 @@ function getUserFavoredFeaturedCollection (id, page = 1) {
   })
 }
 
-function getUserCreatedFeaturedCollection (id, page = 1) {
+function getUserCreatedFeaturedCollections (id, page = 1) {
   if (page < 1) throw new Error('Argument `page` must more than or equal to 1')
   return new Promise((resolve, reject) => {
     http.get(`http://www.xiami.com/space/collect/u/${id}/page/${page}`, (res) => {
@@ -1049,7 +1049,7 @@ function getUserProfile (id) {
   })
 }
 
-function getUserToken (username, password) {
+function login (username, password) {
   return new Promise((resolve, reject) => {
     https.get('https://login.xiami.com/member/login', (res) => {
       const { statusCode } = res
@@ -1104,7 +1104,14 @@ function getUserToken (username, password) {
             return
           }
 
-          resolve(res.headers['set-cookie'][3].match(/member_auth=(\w+);/)[1])
+          const id = parseInt(res.headers['set-cookie'][4].match(/user=(\d+)/)[1])
+          const name = decodeURIComponent(res.headers['set-cookie'][4].match(/%22(.*?)%22/)[1])
+          const userToken = res.headers['set-cookie'][3].match(/member_auth=(\w+);/)[1]
+          resolve({
+            id,
+            name,
+            userToken
+          })
         })
       })
 
@@ -1118,11 +1125,7 @@ function getUserToken (username, password) {
   })
 }
 
-function getDailyRecommendedTracklist () {
-  return getTracklist(TRACKLIST_TYPE_DAILY_RECOMMENDED, 1)
-}
-
-function getUserDailyRecommendedTracklist (userToken) {
+function getDailyRecommendedTracklist (userToken = null) {
   return getTracklist(TRACKLIST_TYPE_DAILY_RECOMMENDED, 1, userToken)
 }
 
@@ -1407,7 +1410,7 @@ function searchFeaturedCollections (keyword, page = 1) {
   })
 }
 
-function addFavorite (id, type, userToken) {
+function addUserFavorite (id, type, userToken) {
   return new Promise((resolve, reject) => {
     const postData = querystring.stringify({
       type,
@@ -1460,7 +1463,7 @@ function addFavorite (id, type, userToken) {
   })
 }
 
-function deleteFavorite (id, type, userToken) {
+function deleteUserFavorite (id, type, userToken) {
   return new Promise((resolve, reject) => {
     let queryType = null
     switch (type) {
@@ -1520,48 +1523,48 @@ function deleteFavorite (id, type, userToken) {
   })
 }
 
-function addAlbumToFavorite (id, userToken) {
-  return addFavorite(id, FAVORITE_TYPE_ALBUM, userToken)
+function addAlbumToUserFavorite (id, userToken) {
+  return addUserFavorite(id, FAVORITE_TYPE_ALBUM, userToken)
 }
 
-function deleteAlbumFromFavorite (id, userToken) {
-  return deleteFavorite(id, FAVORITE_TYPE_ALBUM, userToken)
+function deleteAlbumFromUserFavorite (id, userToken) {
+  return deleteUserFavorite(id, FAVORITE_TYPE_ALBUM, userToken)
 }
 
-function addSongToFavorite (id, userToken) {
-  return addFavorite(id, FAVORITE_TYPE_SONG, userToken)
+function addSongToUserFavorite (id, userToken) {
+  return addUserFavorite(id, FAVORITE_TYPE_SONG, userToken)
 }
 
-function deleteSongFromFavorite (id, userToken) {
-  return deleteFavorite(id, FAVORITE_TYPE_SONG, userToken)
+function deleteSongFromUserFavorite (id, userToken) {
+  return deleteUserFavorite(id, FAVORITE_TYPE_SONG, userToken)
 }
 
-function addArtistToFavorite (id, userToken) {
-  return addFavorite(id, FAVORITE_TYPE_ARTIST, userToken)
+function addArtistToUserFavorite (id, userToken) {
+  return addUserFavorite(id, FAVORITE_TYPE_ARTIST, userToken)
 }
 
-function deleteArtistFromFavorite (id, userToken) {
-  return deleteFavorite(id, FAVORITE_TYPE_ARTIST, userToken)
+function deleteArtistFromUserFavorite (id, userToken) {
+  return deleteUserFavorite(id, FAVORITE_TYPE_ARTIST, userToken)
 }
 
-function addFeaturedCollectionToFavorite (id, userToken) {
-  return addFavorite(id, FAVORITE_TYPE_FEATURED_COLLECTION, userToken)
+function addFeaturedCollectionToUserFavorite (id, userToken) {
+  return addUserFavorite(id, FAVORITE_TYPE_FEATURED_COLLECTION, userToken)
 }
 
-function deleteFeaturedCollectionFromFavorite (id, userToken) {
-  return deleteFavorite(id, FAVORITE_TYPE_FEATURED_COLLECTION, userToken)
+function deleteFeaturedCollectionFromUserFavorite (id, userToken) {
+  return deleteUserFavorite(id, FAVORITE_TYPE_FEATURED_COLLECTION, userToken)
 }
 
 module.exports = {
-  getFeaturedCollectionProfile,
+  getFeaturedCollectionContent,
   getArtistIdByName,
   getArtistIdBySearch,
   getArtistIdByNameOrSearch,
   getArtistProfile,
   getArtistAlbums,
   getArtistTop100Songs,
-  getAlbumProfile,
-  getSongProfile,
+  getAlbumContent,
+  getSongContent,
   getSongHQAudioURL,
   getTracklist,
   getSongsTracklist,
@@ -1569,14 +1572,13 @@ module.exports = {
   getAlbumTracklist,
   getFeaturedCollectionTracklist,
   getDailyRecommendedTracklist,
-  getUserDailyRecommendedTracklist,
   getUserFavoredSongs,
   getUserFavoredAlbums,
   getUserFavoredArtists,
-  getUserFavoredFeaturedCollection,
-  getUserCreatedFeaturedCollection,
+  getUserFavoredFeaturedCollections,
+  getUserCreatedFeaturedCollections,
   getUserProfile,
-  getUserToken,
+  login,
   getRadioTracklist,
   getUserRadioTracklist,
   getArtistRadioTracklist,
@@ -1585,16 +1587,16 @@ module.exports = {
   searchSongs,
   searchAlbums,
   searchFeaturedCollections,
-  addFavorite,
-  deleteFavorite,
-  addAlbumToFavorite,
-  deleteAlbumFromFavorite,
-  addSongToFavorite,
-  deleteSongFromFavorite,
-  addArtistToFavorite,
-  deleteArtistFromFavorite,
-  addFeaturedCollectionToFavorite,
-  deleteFeaturedCollectionFromFavorite,
+  addUserFavorite,
+  deleteUserFavorite,
+  addAlbumToUserFavorite,
+  deleteAlbumFromUserFavorite,
+  addSongToUserFavorite,
+  deleteSongFromUserFavorite,
+  addArtistToUserFavorite,
+  deleteArtistFromUserFavorite,
+  addFeaturedCollectionToUserFavorite,
+  deleteFeaturedCollectionFromUserFavorite,
   FAVORITE_TYPE_SONG,
   FAVORITE_TYPE_ALBUM,
   FAVORITE_TYPE_FEATURED_COLLECTION,
