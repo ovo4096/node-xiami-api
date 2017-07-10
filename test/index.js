@@ -1,11 +1,7 @@
-const { User } = require('../src')
+const { Album } = require('../src')
 
-User.login('', '').then((user) => {
-  user.dailyRecommendedTracklist().then((tracklist) => {
-    console.log(tracklist)
-  }).catch((e) => {
-    console.log(e)
-  })
+Album.search('十年').then((data) => {
+  console.log(data)
 }).catch((e) => {
   console.log(e)
 })
