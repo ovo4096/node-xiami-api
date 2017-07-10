@@ -1,6 +1,6 @@
 {
   "name": "node-xiami-api",
-  "version": "1.0.1-2",
+  "version": "1.0.1-3",
   "description": "Xiami music API for Node.js",
   "main": "index.js",
   "scripts": {
